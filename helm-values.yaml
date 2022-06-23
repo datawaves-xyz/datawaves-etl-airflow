@@ -1,0 +1,98 @@
+# Default airflow tag to deploy
+defaultAirflowTag: "2.3.2"
+
+# Airflow version (Used to make some decisions based on Airflow Version being deployed)
+airflowVersion: "2.3.2"
+
+images:
+  airflow:
+    repository: {{IMAGE_REPOSITORY}}
+    tag: {{IMAGE_TAG}}
+
+# Airflow database & redis config
+data:
+  metadataSecretName: airflow-database
+  resultBackendSecretName: airflow-result-database
+
+# Flask secret key for Airflow Webserver: `[webserver] secret_key` in airflow.cfg
+webserverSecretKeySecretName: airflow-webserver-secret
+
+# Fernet key settings
+# Note: fernetKey can only be set during install, not upgrade
+fernetKey: {{FERNET_KEY}}
+
+# PgBouncer settings
+pgbouncer:
+  # Enable PgBouncer
+  enabled: true
+
+# Configuration for postgresql subchart
+# Not recommended for production
+postgresql:
+  enabled: false
+
+# Git sync
+dags:
+  gitSync:
+    enabled: true
+
+    # git repo clone url
+    # ssh examples ssh://git@github.com/apache/airflow.git
+    # git@github.com:apache/airflow.git
+    # https example: https://github.com/apache/airflow.git
+    repo: https://github.com/datawaves-xyz/datawaves-etl-airflow.git
+    branch: master
+    # subpath within the repo where dags are located
+    # should be "" if dags are at repo root
+    subPath: "/dags"
+
+    # if your repo needs a user name password
+    # you can load them to a k8s secret like the one below
+    #   ---
+    #   apiVersion: v1
+    #   kind: Secret
+    #   metadata:
+    #     name: git-credentials
+    #   data:
+    #     GIT_SYNC_USERNAME: <base64_encoded_git_username>
+    #     GIT_SYNC_PASSWORD: <base64_encoded_git_password>
+    # and specify the name of the secret below
+    credentialsSecret: git-credentials
+
+config:
+  core:
+    parallelism: 64
+  celery:
+    worker_concurrency: 16
+
+workers:
+  replicas: 0
+
+  resources:
+    requests:
+      memory: 4Gi
+    limits:
+      memory: 4Gi
+
+  keda:
+    enabled: true
+    namespaceLabels: {}
+    # How often KEDA polls the airflow DB to report new scale requests to the HPA
+    pollingInterval: 5
+    # How many seconds KEDA will wait before scaling to zero.
+    # Note that HPA has a separate cooldown period for scale-downs
+    cooldownPeriod: 30
+    # Minimum number of workers created by keda
+    minReplicaCount: 0
+    # Maximum number of workers created by keda
+    maxReplicaCount: 4
+
+  extraInitContainers:
+   - name: volume-logs
+     image: busybox
+
+logs:
+  persistence:
+    # Enable persistent volume for storing logs
+    enabled: true
+    storageClassName: aws-efs
