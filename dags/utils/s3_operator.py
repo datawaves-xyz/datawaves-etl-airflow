@@ -16,7 +16,7 @@ class S3Operator:
         logging.info(f'Calling copy_to_export_path({file_path}, {export_path})')
         filename = os.path.basename(file_path)
         self.hook.load_file(
-            filename=filename,
+            filename=file_path,
             bucket_name=self.bucket,
             key=export_path + filename,
             replace=True,

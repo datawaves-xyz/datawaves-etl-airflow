@@ -36,7 +36,7 @@ class Exporter:
                     self.export_callable(**kwargs)
                     break
                 except Exception as e:
-                    if index < (len(provider_uri) - 1):
+                    if index < (len(self.provider_uris) - 1):
                         logging.exception('An exception occurred. Trying another uri')
                     else:
                         raise e
@@ -57,4 +57,4 @@ class Exporter:
 
     @staticmethod
     def export_path(directory: str, date: datetime) -> str:
-        return f'export/{directory}/block_date={date.strftime("%Y-%m-%d")}'
+        return f'export/{directory}/block_date={date.strftime("%Y-%m-%d")}/'

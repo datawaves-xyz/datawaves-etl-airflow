@@ -4,38 +4,49 @@ from typing import Optional, Dict, List
 from airflow.models import Variable
 
 
-def read_ethereum_vars(prefix: str = 'ethereum') -> Dict[str, any]:
+def read_ethereum_vars(prefix: str, **kwargs) -> Dict[str, any]:
     return {
-        'provider_uris': parse_list(read_vars('provider_uris', prefix, True)),
-        'export_max_workers': parse_int(read_vars('export_max_workers', prefix, False)),
-        'export_batch_size': parse_int(read_vars('export_batch_size', prefix, False)),
-        'exporter_schedule_interval': read_vars('exporter_schedule_interval', prefix, False),
-        'notification_emails': parse_list(read_vars('notification_emails', prefix, False)),
+        'provider_uris': parse_list(read_var('provider_uris', prefix, True, **kwargs)),
+        'export_max_workers': parse_int(read_var('export_max_workers', prefix, False, **kwargs)),
+        'export_batch_size': parse_int(read_var('export_batch_size', prefix, False, **kwargs)),
+        'export_schedule_interval': read_var('export_schedule_interval', prefix, False, **kwargs),
+        'notification_emails': parse_list(read_var('notification_emails', prefix, False, **kwargs)),
+        'export_daofork_traces_option': parse_bool(
+            read_var('export_daofork_traces_option', prefix, False, **kwargs)),
+        'export_genesis_traces_option': parse_bool(
+            read_var('export_genesis_traces_option', prefix, False, **kwargs)),
         'export_blocks_and_transactions_toggle': parse_bool(
-            read_vars('export_blocks_and_transactions_toggle', prefix, False, 'True')),
+            read_var('export_blocks_and_transactions_toggle', prefix, False, **kwargs)),
+        'export_receipts_and_logs_toggle': parse_bool(
+            read_var('export_receipts_and_logs_toggle', prefix, False, **kwargs)),
+        'extract_token_transfers_toggle': parse_bool(
+            read_var('extract_token_transfers_toggle', prefix, False, **kwargs)),
+        'export_traces_toggle': parse_bool(
+            read_var('export_traces_toggle', prefix, False, **kwargs)),
+        'extract_contracts_toggle': parse_bool(
+            read_var('extract_contracts_toggle', prefix, False, **kwargs)),
+        'extract_tokens_toggle': parse_bool(
+            read_var('extract_tokens_toggle', prefix, False, **kwargs)),
         **read_global_vars(),
     }
 
 
 def read_global_vars(prefix: Optional[str] = None) -> Dict[str, any]:
-    return {'output_bucket': read_vars('output_bucket', prefix, True)}
+    return {'output_bucket': read_var('output_bucket', prefix, True)}
 
 
-def read_vars(
+def read_var(
         var_name: str,
         var_prefix: Optional[str] = None,
         required: bool = False,
-        default: Optional[str] = None,
         **kwargs
-) -> str:
+) -> Optional[str]:
     full_var_name = var_name if var_prefix is None else f'{var_prefix}{var_name}'
     var = Variable.get(full_var_name, '')
     if var == '':
         var = None
     if var is None:
-        var = default
-    if var is None:
-        var = kwargs.get(full_var_name)
+        var = kwargs.get(var_name)
     if required and var is None:
         raise ValueError(f'{full_var_name} variable is required.')
     return var
