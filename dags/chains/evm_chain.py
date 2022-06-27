@@ -3,26 +3,33 @@ import os
 from tempfile import TemporaryDirectory
 from typing import List, Tuple, Optional
 
-from ethereumetl.cli import get_block_range_for_date, export_blocks_and_transactions, extract_field, \
-    export_receipts_and_logs, extract_contracts, extract_tokens, extract_token_transfers, export_traces
+from ethereumetl.cli import (
+    get_block_range_for_date,
+    export_blocks_and_transactions,
+    extract_field,
+    export_receipts_and_logs,
+    extract_contracts,
+    extract_tokens,
+    extract_token_transfers,
+    export_traces
+)
 from pendulum import datetime
 
-from chain.blockchain import Blockchain
-from chain.exporter import Exporter
+from chains.blockchain import Blockchain
+from chains.exporter import Exporter
+from chains.loader import Loader
 from utils.s3_operator import S3Operator
 
 
-def build_ethereum(
+def build_evm_exporters(
         provider_uris: List[str],
         output_bucket: str,
         export_max_workers: int = 10,
         export_batch_size: int = 10,
-        export_schedule_interval: str = '30 0 * * *',
-        notification_emails: Optional[List[str]] = None,
         **kwargs
-) -> Blockchain:
+) -> List[Exporter]:
     s3 = S3Operator(aws_conn_id='aws_default', bucket=output_bucket)
-    ep = Exporter.export_path
+    ep = Exporter.export_folder_path
     export_daofork_traces_option = kwargs.get('export_daofork_traces_option')
     export_genesis_traces_option = kwargs.get('export_genesis_traces_option')
 
@@ -156,52 +163,129 @@ def build_ethereum(
 
             s3.copy_to_export_path(os.path.join(tempdir, "traces.json"), ep("traces", logical_date))
 
+    return [
+        Exporter(
+            task_id='export_blocks_and_transactions',
+            toggle=kwargs.get('export_blocks_and_transactions_toggle'),
+            provider_uris=provider_uris,
+            export_callable=export_blocks_and_transactions_command,
+            dependencies=[]
+        ),
+        Exporter(
+            task_id='export_receipts_and_logs',
+            toggle=kwargs.get('export_receipts_and_logs_toggle'),
+            provider_uris=provider_uris,
+            export_callable=export_receipts_and_logs_command,
+            dependencies=['export_blocks_and_transactions']
+        ),
+        Exporter(
+            task_id='extract_token_transfers',
+            toggle=kwargs.get('extract_token_transfers_toggle'),
+            provider_uris=provider_uris,
+            export_callable=extract_token_transfers_command,
+            dependencies=['export_receipts_and_logs']
+        ),
+        Exporter(
+            task_id='export_traces',
+            toggle=kwargs.get('export_traces_toggle'),
+            provider_uris=provider_uris,
+            export_callable=export_traces_command,
+            dependencies=[]
+        ),
+        Exporter(
+            task_id='extract_contracts',
+            toggle=kwargs.get('extract_contracts_toggle'),
+            provider_uris=provider_uris,
+            export_callable=extract_contracts_command,
+            dependencies=['export_traces']
+        ),
+        Exporter(
+            task_id='extract_tokens',
+            toggle=kwargs.get('extract_tokens_toggle'),
+            provider_uris=provider_uris,
+            export_callable=extract_tokens_command,
+            dependencies=['extract_contracts']
+        )
+    ]
+
+
+def build_evm_loaders() -> List[Loader]:
+    return [
+        Loader(
+            resource='blocks',
+            enrich_dependencies=[],
+            clean_dependencies=['transactions', 'logs', 'token_transfers', 'traces', 'contracts'],
+        ),
+        Loader(
+            resource='transactions',
+            enrich_dependencies=['blocks', 'receipts'],
+            clean_dependencies=[],
+        ),
+        Loader(
+            resource='receipts',
+            enrich_dependencies=[],
+            clean_dependencies=['transactions'],
+            enrich_toggle=False
+        ),
+        Loader(
+            resource='logs',
+            enrich_dependencies=['blocks'],
+            clean_dependencies=[]
+        ),
+        Loader(
+            resource='token_transfers',
+            enrich_dependencies=['blocks'],
+            clean_dependencies=[]
+        ),
+        Loader(
+            resource='traces',
+            enrich_dependencies=['blocks'],
+            clean_dependencies=[]
+        ),
+        Loader(
+            resource='contracts',
+            enrich_dependencies=['blocks'],
+            clean_dependencies=[]
+        ),
+        Loader(
+            resource='tokens',
+            enrich_dependencies=[],
+            clean_dependencies=[]
+        ),
+        Loader(
+            resource='prices',
+            file_format='csv',
+            enrich_dependencies=[],
+            clean_dependencies=[]
+        )
+    ]
+
+
+def build_evm_chain(
+        provider_uris: List[str],
+        output_bucket: str,
+        export_max_workers: int = 10,
+        export_batch_size: int = 10,
+        export_schedule_interval: str = '30 0 * * *',
+        load_schedule_interval: str = '0 1 * * *',
+        notification_emails: Optional[List[str]] = None,
+        **kwargs
+) -> Blockchain:
+    exporters = build_evm_exporters(
+        provider_uris,
+        output_bucket,
+        export_max_workers,
+        export_batch_size,
+        **kwargs
+    )
+
+    loaders = build_evm_loaders()
+
     return Blockchain(
         name='ethereum',
-        exporters=[
-            Exporter(
-                task_id='export_blocks_and_transactions',
-                toggle=kwargs.get('export_blocks_and_transactions_toggle'),
-                provider_uris=provider_uris,
-                export_callable=export_blocks_and_transactions_command,
-                dependencies=[]
-            ),
-            Exporter(
-                task_id='export_receipts_and_logs',
-                toggle=kwargs.get('export_receipts_and_logs_toggle'),
-                provider_uris=provider_uris,
-                export_callable=export_receipts_and_logs_command,
-                dependencies=['export_blocks_and_transactions']
-            ),
-            Exporter(
-                task_id='extract_token_transfers',
-                toggle=kwargs.get('extract_token_transfers_toggle'),
-                provider_uris=provider_uris,
-                export_callable=extract_token_transfers_command,
-                dependencies=['export_receipts_and_logs']
-            ),
-            Exporter(
-                task_id='export_traces',
-                toggle=kwargs.get('export_traces_toggle'),
-                provider_uris=provider_uris,
-                export_callable=export_traces_command,
-                dependencies=[]
-            ),
-            Exporter(
-                task_id='extract_contracts',
-                toggle=kwargs.get('extract_contracts_toggle'),
-                provider_uris=provider_uris,
-                export_callable=extract_contracts_command,
-                dependencies=['export_traces']
-            ),
-            Exporter(
-                task_id='extract_tokens',
-                toggle=kwargs.get('extract_tokens_toggle'),
-                provider_uris=provider_uris,
-                export_callable=extract_tokens_command,
-                dependencies=['extract_contracts']
-            ),
-        ],
+        exporters=exporters,
+        loaders=loaders,
         export_schedule_interval=export_schedule_interval,
+        load_schedule_interval=load_schedule_interval,
         notification_emails=notification_emails
     )

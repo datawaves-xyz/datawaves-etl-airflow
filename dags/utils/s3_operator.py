@@ -27,7 +27,7 @@ class S3Operator:
         logging.info(f'Calling copy_from_export_path({export_path}, {file_path})')
         filename = os.path.basename(file_path)
         self.hook.download_file(
-            bucket=self.bucket,
             key=export_path + filename,
+            bucket_name=self.bucket,
             local_path=file_path
         )

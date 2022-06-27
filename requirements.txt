@@ -1,2 +1,4 @@
 apache-airflow[amazon]==2.3.2
+apache-airflow-providers-apache-spark==3.0.0
 ethereum-etl==2.0.2
+mashumaro==3.0.3

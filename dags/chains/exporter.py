@@ -8,11 +8,12 @@ from airflow.operators.python import PythonOperator
 
 
 class Exporter:
-    task_id: str
+    resource: List[str]
     toggle: bool
     provider_uris: List[str]
     export_callable: Callable
     dependencies: List[str]
+    export_operator: Optional[BaseOperator]
 
     def __init__(
             self,
@@ -43,9 +44,9 @@ class Exporter:
 
         return python_callable_with_fallback
 
-    def gen_export_task(self, dag: DAG) -> Optional[BaseOperator]:
+    def gen_export_task(self, dag: DAG) -> None:
         if self.toggle:
-            return PythonOperator(
+            self.export_operator = PythonOperator(
                 task_id=self.task_id,
                 python_callable=self.get_fallback_callable(),
                 provide_context=True,
@@ -53,8 +54,8 @@ class Exporter:
                 dag=dag
             )
         else:
-            return None
+            self.export_operator = None
 
     @staticmethod
-    def export_path(directory: str, date: datetime) -> str:
+    def export_folder_path(directory: str, date: datetime) -> str:
         return f'export/{directory}/block_date={date.strftime("%Y-%m-%d")}/'

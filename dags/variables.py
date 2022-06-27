@@ -1,10 +1,21 @@
 import json
-from typing import Optional, Dict, List
+from dataclasses import dataclass
+from typing import Optional, Dict, List, Any
 
 from airflow.models import Variable
+from mashumaro import DataClassDictMixin
 
 
-def read_ethereum_vars(prefix: str, **kwargs) -> Dict[str, any]:
+@dataclass
+class SparkConf(DataClassDictMixin):
+    java_class: str
+    conf: Dict[str, Any]
+    jars: str
+    application: str
+    application_args: List[str]
+
+
+def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
     return {
         'provider_uris': parse_list(read_var('provider_uris', prefix, True, **kwargs)),
         'export_max_workers': parse_int(read_var('export_max_workers', prefix, False, **kwargs)),
@@ -31,8 +42,26 @@ def read_ethereum_vars(prefix: str, **kwargs) -> Dict[str, any]:
     }
 
 
-def read_global_vars(prefix: Optional[str] = None) -> Dict[str, any]:
+def read_evm_loader_spark_vars(prefix: str, **kwargs) -> SparkConf:
+    global_spark_vars = read_global_spark_vars()
+    global_spark_vars['java_class'] = read_var('spark_java_class', prefix, True)
+    loader_spark_conf = parse_dict(read_var('spark_conf', prefix, False))
+    if loader_spark_conf is not None:
+        global_spark_vars['conf'].extend(loader_spark_conf)
+
+    return SparkConf.from_dict(global_spark_vars)
+
+
+def read_global_vars(prefix: Optional[str] = None) -> Dict[str, Any]:
     return {'output_bucket': read_var('output_bucket', prefix, True)}
+
+
+def read_global_spark_vars(prefix: Optional[str] = None) -> Dict[str, Any]:
+    return {
+        'jars': read_var('spark_jars', prefix, True),
+        'application': read_var('spark_application', prefix, True),
+        'conf': parse_dict(read_var('spark_conf', prefix, True))
+    }
 
 
 def read_var(
@@ -67,7 +96,7 @@ def parse_int(val: Optional[str]) -> Optional[int]:
     return int(val)
 
 
-def parse_dict(val: Optional[str]) -> Optional[Dict[any, any]]:
+def parse_dict(val: Optional[str]) -> Optional[Dict[Any, Any]]:
     if val is None:
         return None
     return json.loads(val)
