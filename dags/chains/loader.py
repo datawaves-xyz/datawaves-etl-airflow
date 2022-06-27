@@ -10,15 +10,15 @@ from templates.evm_load_template import load_temp_table_template_map, enrich_tab
 from variables import SparkConf
 
 temp_table_names = {
-    'temp_block_table': 'blocks_{{nodash}}',
-    'temp_transaction_table': 'transactions_{{nodash}}',
-    'temp_contract_table': 'contracts_{{nodash}}',
-    'temp_log_table': 'logs_{{nodash}}',
-    'temp_price_table': 'prices_{{nodash}}',
-    'temp_transfer_table': 'token_transfers_{{nodash}}',
-    'temp_token_table': 'tokens_{{nodash}}',
-    'temp_trace_table': 'traces_{{nodash}}',
-    'temp_receipt_table': 'receipts_{{nodash}}'
+    'temp_block_table': 'blocks_{{ds_nodash}}',
+    'temp_transaction_table': 'transactions_{{ds_nodash}}',
+    'temp_contract_table': 'contracts_{{ds_nodash}}',
+    'temp_log_table': 'logs_{{ds_nodash}}',
+    'temp_price_table': 'prices_{{ds_nodash}}',
+    'temp_transfer_table': 'token_transfers_{{ds_nodash}}',
+    'temp_token_table': 'tokens_{{ds_nodash}}',
+    'temp_trace_table': 'traces_{{ds_nodash}}',
+    'temp_receipt_table': 'receipts_{{ds_nodash}}'
 }
 
 
@@ -35,16 +35,16 @@ class Loader:
     def __init__(
             self,
             resource: str,
-            enrich_dependencies: List[str],
-            clean_dependencies: List[str],
             file_format: str = 'json',
-            enrich_toggle: bool = True
+            enrich_toggle: bool = True,
+            enrich_dependencies: List[str] = None,
+            clean_dependencies: List[str] = None
     ) -> None:
         self.resource = resource
         self.file_format = file_format
-        self.enrich_dependencies = enrich_dependencies
-        self.clean_dependencies = clean_dependencies
         self.enrich_toggle = enrich_toggle
+        self.enrich_dependencies = [] if enrich_dependencies is None else enrich_dependencies
+        self.clean_dependencies = [] if clean_dependencies is None else clean_dependencies
 
     def gen_operators(
             self,
@@ -64,7 +64,7 @@ class Loader:
         )
 
         load_sql = load_temp_table_template_map[self.resource](
-            database,
+            temp_database,
             self.temp_table,
             self.file_format,
             self.s3_export_full_path(output_bucket),
@@ -89,7 +89,7 @@ class Loader:
                 temp_database,
                 self.resource,
                 self.temp_table,
-                temp_table_names
+                **temp_table_names
             )
 
             enrich_operator = SparkSubmitOperator(
@@ -131,13 +131,13 @@ class Loader:
 
     @property
     def export_path(self) -> str:
-        return 'export/{task}/block_date={{ds}}/{task}.{file_format}'.format(
+        return 'export/{task}/block_date={{{{ds}}}}/{task}.{file_format}'.format(
             task=self.resource, file_format=self.file_format
         )
 
     @property
     def temp_table(self) -> str:
-        return '{resource}_{{ds_nodash}}'.format(resource=self.resource)
+        return '{resource}_{{{{ds_nodash}}}}'.format(resource=self.resource)
 
     def s3_export_full_path(self, bucket: str) -> str:
         return f's3a://{bucket}/{self.export_path}'

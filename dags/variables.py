@@ -17,11 +17,11 @@ class SparkConf(DataClassDictMixin):
 
 def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
     return {
+        # Export
         'provider_uris': parse_list(read_var('provider_uris', prefix, True, **kwargs)),
         'export_max_workers': parse_int(read_var('export_max_workers', prefix, False, **kwargs)),
         'export_batch_size': parse_int(read_var('export_batch_size', prefix, False, **kwargs)),
         'export_schedule_interval': read_var('export_schedule_interval', prefix, False, **kwargs),
-        'notification_emails': parse_list(read_var('notification_emails', prefix, False, **kwargs)),
         'export_daofork_traces_option': parse_bool(
             read_var('export_daofork_traces_option', prefix, False, **kwargs)),
         'export_genesis_traces_option': parse_bool(
@@ -38,6 +38,11 @@ def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
             read_var('extract_contracts_toggle', prefix, False, **kwargs)),
         'extract_tokens_toggle': parse_bool(
             read_var('extract_tokens_toggle', prefix, False, **kwargs)),
+        # Load
+        'load_schedule_interval': read_var('load_schedule_interval', prefix, False, **kwargs),
+        'load_spark_conf': read_evm_loader_spark_vars(prefix + 'loader_'),
+        # Common
+        'notification_emails': parse_list(read_var('notification_emails', prefix, False, **kwargs)),
         **read_global_vars(),
     }
 
@@ -45,9 +50,13 @@ def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
 def read_evm_loader_spark_vars(prefix: str, **kwargs) -> SparkConf:
     global_spark_vars = read_global_spark_vars()
     global_spark_vars['java_class'] = read_var('spark_java_class', prefix, True)
+
     loader_spark_conf = parse_dict(read_var('spark_conf', prefix, False))
     if loader_spark_conf is not None:
         global_spark_vars['conf'].extend(loader_spark_conf)
+
+    loader_spark_args = parse_list(read_var('spark_application_args', prefix, False))
+    global_spark_vars['application_args'] = loader_spark_args if loader_spark_args is not None else []
 
     return SparkConf.from_dict(global_spark_vars)
 

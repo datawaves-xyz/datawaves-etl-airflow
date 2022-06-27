@@ -26,8 +26,10 @@ class S3Operator:
     def copy_from_export_path(self, export_path: str, file_path: str) -> None:
         logging.info(f'Calling copy_from_export_path({export_path}, {file_path})')
         filename = os.path.basename(file_path)
-        self.hook.download_file(
+        s3_object = self.hook.get_key(
             key=export_path + filename,
-            bucket_name=self.bucket,
-            local_path=file_path
+            bucket_name=self.bucket
         )
+
+        with open(file_path, 'wb') as f:
+            s3_object.download_fileobj(f)

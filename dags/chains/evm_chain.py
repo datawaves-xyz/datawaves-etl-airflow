@@ -22,7 +22,6 @@ from utils.s3_operator import S3Operator
 
 
 def build_evm_exporters(
-        provider_uris: List[str],
         output_bucket: str,
         export_max_workers: int = 10,
         export_batch_size: int = 10,
@@ -167,42 +166,34 @@ def build_evm_exporters(
         Exporter(
             task_id='export_blocks_and_transactions',
             toggle=kwargs.get('export_blocks_and_transactions_toggle'),
-            provider_uris=provider_uris,
             export_callable=export_blocks_and_transactions_command,
-            dependencies=[]
         ),
         Exporter(
             task_id='export_receipts_and_logs',
             toggle=kwargs.get('export_receipts_and_logs_toggle'),
-            provider_uris=provider_uris,
             export_callable=export_receipts_and_logs_command,
             dependencies=['export_blocks_and_transactions']
         ),
         Exporter(
             task_id='extract_token_transfers',
             toggle=kwargs.get('extract_token_transfers_toggle'),
-            provider_uris=provider_uris,
             export_callable=extract_token_transfers_command,
             dependencies=['export_receipts_and_logs']
         ),
         Exporter(
             task_id='export_traces',
             toggle=kwargs.get('export_traces_toggle'),
-            provider_uris=provider_uris,
             export_callable=export_traces_command,
-            dependencies=[]
         ),
         Exporter(
             task_id='extract_contracts',
             toggle=kwargs.get('extract_contracts_toggle'),
-            provider_uris=provider_uris,
             export_callable=extract_contracts_command,
             dependencies=['export_traces']
         ),
         Exporter(
             task_id='extract_tokens',
             toggle=kwargs.get('extract_tokens_toggle'),
-            provider_uris=provider_uris,
             export_callable=extract_tokens_command,
             dependencies=['extract_contracts']
         )
@@ -211,58 +202,20 @@ def build_evm_exporters(
 
 def build_evm_loaders() -> List[Loader]:
     return [
-        Loader(
-            resource='blocks',
-            enrich_dependencies=[],
-            clean_dependencies=['transactions', 'logs', 'token_transfers', 'traces', 'contracts'],
-        ),
-        Loader(
-            resource='transactions',
-            enrich_dependencies=['blocks', 'receipts'],
-            clean_dependencies=[],
-        ),
-        Loader(
-            resource='receipts',
-            enrich_dependencies=[],
-            clean_dependencies=['transactions'],
-            enrich_toggle=False
-        ),
-        Loader(
-            resource='logs',
-            enrich_dependencies=['blocks'],
-            clean_dependencies=[]
-        ),
-        Loader(
-            resource='token_transfers',
-            enrich_dependencies=['blocks'],
-            clean_dependencies=[]
-        ),
-        Loader(
-            resource='traces',
-            enrich_dependencies=['blocks'],
-            clean_dependencies=[]
-        ),
-        Loader(
-            resource='contracts',
-            enrich_dependencies=['blocks'],
-            clean_dependencies=[]
-        ),
-        Loader(
-            resource='tokens',
-            enrich_dependencies=[],
-            clean_dependencies=[]
-        ),
-        Loader(
-            resource='prices',
-            file_format='csv',
-            enrich_dependencies=[],
-            clean_dependencies=[]
-        )
+        Loader(resource='blocks',
+               clean_dependencies=['transactions', 'logs', 'token_transfers', 'traces', 'contracts']),
+        Loader(resource='transactions', enrich_dependencies=['blocks', 'receipts']),
+        Loader(resource='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
+        Loader(resource='logs', enrich_dependencies=['blocks']),
+        Loader(resource='token_transfers', enrich_dependencies=['blocks']),
+        Loader(resource='traces', enrich_dependencies=['blocks']),
+        Loader(resource='contracts', enrich_dependencies=['blocks']),
+        Loader(resource='tokens'),
+        Loader(resource='prices', file_format='csv')
     ]
 
 
 def build_evm_chain(
-        provider_uris: List[str],
         output_bucket: str,
         export_max_workers: int = 10,
         export_batch_size: int = 10,
@@ -272,7 +225,6 @@ def build_evm_chain(
         **kwargs
 ) -> Blockchain:
     exporters = build_evm_exporters(
-        provider_uris,
         output_bucket,
         export_max_workers,
         export_batch_size,

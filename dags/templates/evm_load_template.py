@@ -151,7 +151,7 @@ def create_temp_transaction_table_sql(database: str, table: str, file_format: st
 
 def enrich_block_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     return """INSERT OVERWRITE TABLE `{database}`.`{table}`
-        PARTITION (dt = date '{{ds}}')
+        PARTITION (dt = date '{{{{ds}}}}')
         SELECT /*+ REPARTITION(1) */
             TIMESTAMP_SECONDS(blocks.timestamp) AS `timestamp`,
             blocks.number,
@@ -180,7 +180,7 @@ def enrich_block_table_sql(database: str, temp_database: str, table: str, temp_t
 def enrich_contract_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     temp_block_table = kwargs['temp_block_table']
     return """INSERT OVERWRITE TABLE `{database}`.`{table}`
-        PARTITION (dt = date '{{ds}}')
+        PARTITION (dt = date '{{{{ds}}}}')
         SELECT /*+ REPARTITION(1) */
             contracts.address,
             contracts.bytecode,
@@ -201,7 +201,7 @@ def enrich_contract_table_sql(database: str, temp_database: str, table: str, tem
 def enrich_log_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     temp_block_table = kwargs['temp_block_table']
     return """INSERT OVERWRITE TABLE `{database}`.`{table}`
-        PARTITION (dt = date '{{ds}}', address_hash, selector_hash)
+        PARTITION (dt = date '{{{{ds}}}}', address_hash, selector_hash)
         SELECT /*+ REPARTITION(1) */
             log_index,
             transaction_hash,
@@ -245,7 +245,7 @@ def enrich_log_table_sql(database: str, temp_database: str, table: str, temp_tab
 
 def enrich_price_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     return """INSERT OVERWRITE TABLE `{database}`.`{table}`
-        PARTITION (dt = date '{{ds}}')
+        PARTITION (dt = date '{{{{ds}}}}')
         SELECT /*+ REPARTITION(1) */
             prices.minute,
             prices.price,
@@ -260,7 +260,7 @@ def enrich_price_table_sql(database: str, temp_database: str, table: str, temp_t
 def enrich_token_transfer_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     temp_block_table = kwargs['temp_block_table']
     return """INSERT OVERWRITE TABLE `{database}`.`{table}`
-        PARTITION (dt = date '{{ds}}')
+        PARTITION (dt = date '{{{{ds}}}}')
         SELECT /*+ REPARTITION(1) */
             token_transfers.token_address,
             token_transfers.from_address,
@@ -301,7 +301,7 @@ def enrich_token_table_sql(database: str, temp_database: str, table: str, temp_t
 def enrich_trace_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     temp_block_table = kwargs['temp_block_table']
     return """INSERT OVERWRITE TABLE `{database}`.`{table}`
-    PARTITION (dt = date '{{ds}}', address_hash, selector_hash)
+    PARTITION (dt = date '{{{{ds}}}}', address_hash, selector_hash)
     SELECT /*+ REPARTITION(1) */
         traces.transaction_hash,
         traces.transaction_index,
@@ -340,7 +340,7 @@ def enrich_transaction_table_sql(database: str, temp_database: str, table: str, 
     temp_block_table = kwargs['temp_block_table']
     temp_receipt_table = kwargs['temp_receipt_table']
     return """INSERT OVERWRITE TABLE `{database}`.`{table}`
-    PARTITION (dt = date '{{ds}}')
+    PARTITION (dt = date '{{{{ds}}}}')
     SELECT /*+ REPARTITION(1) */
         transactions.hash,
         transactions.nonce,

@@ -32,24 +32,34 @@ class Blockchain:
         self.load_schedule_interval = load_schedule_interval
         self.notification_emails = notification_emails
 
-    def build_all_dags(self, output_bucket: str, load_spark_conf: SparkConf) -> List[DAG]:
+    def build_all_dags(
+            self,
+            output_bucket: str,
+            provider_uris: List[str],
+            load_spark_conf: SparkConf,
+            **kwargs
+    ) -> List[DAG]:
         return [
-            self.build_export_dag(),
+            self.build_export_dag(provider_uris),
             self.build_load_dag(output_bucket, load_spark_conf)
         ]
 
-    def build_export_dag(self) -> DAG:
+    def build_export_dag(self, provider_uris: List[str]) -> DAG:
         export_dag = DAG(
             dag_id=self.export_dag_name,
             schedule_interval=self.export_schedule_interval,
             default_args=get_default_dag_args(self.notification_emails)
         )
 
-        operator_map = {export.task_id: export.gen_export_task(export_dag) for export in self.exporters}
+        exporter_map: Dict[str, Exporter] = {}
+
+        for exporter in self.exporters:
+            exporter.gen_export_task(export_dag, provider_uris)
+            exporter_map[exporter.task_id] = exporter
 
         for export in self.exporters:
             for dependency in export.dependencies:
-                operator_map.get(dependency) >> operator_map.get(export.task_id)
+                exporter_map.get(dependency).operator >> exporter_map.get(export.task_id).operator
 
         return export_dag
 

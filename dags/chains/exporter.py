@@ -13,48 +13,46 @@ class Exporter:
     provider_uris: List[str]
     export_callable: Callable
     dependencies: List[str]
-    export_operator: Optional[BaseOperator]
+    operator: Optional[BaseOperator]
 
     def __init__(
             self,
             task_id: str,
             toggle: bool,
-            provider_uris: List[str],
             export_callable: Callable,
-            dependencies: List[str]
+            dependencies: List[str] = None
     ) -> None:
         self.task_id = task_id
         self.toggle = toggle
-        self.provider_uris = provider_uris
         self.export_callable = export_callable
-        self.dependencies = dependencies
+        self.dependencies = [] if dependencies is None else dependencies
 
-    def get_fallback_callable(self) -> Callable:
+    def get_fallback_callable(self, provider_uris: List[str]) -> Callable:
         def python_callable_with_fallback(**kwargs):
-            for index, provider_uri in enumerate(self.provider_uris):
+            for index, provider_uri in enumerate(provider_uris):
                 kwargs['provider_uri'] = provider_uri
                 try:
                     self.export_callable(**kwargs)
                     break
                 except Exception as e:
-                    if index < (len(self.provider_uris) - 1):
+                    if index < (len(provider_uris) - 1):
                         logging.exception('An exception occurred. Trying another uri')
                     else:
                         raise e
 
         return python_callable_with_fallback
 
-    def gen_export_task(self, dag: DAG) -> None:
+    def gen_export_task(self, dag: DAG, provider_uris: List[str]) -> None:
         if self.toggle:
-            self.export_operator = PythonOperator(
+            self.operator = PythonOperator(
                 task_id=self.task_id,
-                python_callable=self.get_fallback_callable(),
+                python_callable=self.get_fallback_callable(provider_uris),
                 provide_context=True,
                 execution_timeout=timedelta(hours=15),
                 dag=dag
             )
         else:
-            self.export_operator = None
+            self.operator = None
 
     @staticmethod
     def export_folder_path(directory: str, date: datetime) -> str:
