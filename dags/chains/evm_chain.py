@@ -18,6 +18,7 @@ from pendulum import datetime
 from chains.blockchain import Blockchain
 from chains.exporter import Exporter
 from chains.loader import Loader
+from offchains.prices import CoinpaprikaPriceProvider
 from utils.s3_operator import S3Operator
 
 
@@ -165,6 +166,22 @@ def build_evm_exporters(
 
             s3.copy_to_export_path(os.path.join(tempdir, "traces.json"), ep(chain, "traces", logical_date))
 
+    def export_prices_command(logical_date: datetime, **kwargs):
+        with TemporaryDirectory() as tempdir:
+            start_ts = int(logical_date.start_of('day').timestamp())
+            end_ts = int(logical_date.start_of('day').timestamp())
+
+            logging.info('Calling export_prices({}, {})'.format(start_ts, end_ts))
+
+            prices_provider = CoinpaprikaPriceProvider(auth_key=kwargs.get('coinpaprika_auth_key'))
+            prices_provider.create_temp_csv(
+                output_path=os.path.join(tempdir, "prices.csv"),
+                start=start_ts,
+                end=end_ts
+            )
+
+            s3.copy_to_export_path(os.path.join(tempdir, "prices.csv"), ep(chain, "prices", logical_date))
+
     return [
         Exporter(
             task_id='export_blocks_and_transactions',
@@ -199,6 +216,12 @@ def build_evm_exporters(
             toggle=kwargs.get('extract_tokens_toggle'),
             export_callable=extract_tokens_command,
             dependencies=['extract_contracts']
+        ),
+        Exporter(
+            task_id='export_prices',
+            toggle=kwargs.get('export_prices_toggle'),
+            export_callable=export_prices_command,
+            off_chain=True
         )
     ]
 

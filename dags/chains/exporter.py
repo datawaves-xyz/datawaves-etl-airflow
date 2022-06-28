@@ -8,24 +8,26 @@ from airflow.operators.python import PythonOperator
 
 
 class Exporter:
-    resource: List[str]
+    task_id: str
     toggle: bool
-    provider_uris: List[str]
     export_callable: Callable
     dependencies: List[str]
     operator: Optional[BaseOperator]
+    off_chain: bool
 
     def __init__(
             self,
             task_id: str,
             toggle: bool,
             export_callable: Callable,
-            dependencies: List[str] = None
+            dependencies: List[str] = None,
+            off_chain: bool = False
     ) -> None:
         self.task_id = task_id
         self.toggle = toggle
         self.export_callable = export_callable
         self.dependencies = [] if dependencies is None else dependencies
+        self.off_chain = off_chain
 
     def get_fallback_callable(self, provider_uris: List[str]) -> Callable:
         def python_callable_with_fallback(**kwargs):
@@ -42,15 +44,25 @@ class Exporter:
 
         return python_callable_with_fallback
 
-    def gen_export_task(self, dag: DAG, provider_uris: List[str]) -> None:
+    def gen_export_task(self, dag: DAG, provider_uris: Optional[List[str]]) -> None:
         if self.toggle:
-            self.operator = PythonOperator(
-                task_id=self.task_id,
-                python_callable=self.get_fallback_callable(provider_uris),
-                provide_context=True,
-                execution_timeout=timedelta(hours=15),
-                dag=dag
-            )
+            if not self.off_chain:
+                assert provider_uris is not None
+                self.operator = PythonOperator(
+                    task_id=self.task_id,
+                    python_callable=self.get_fallback_callable(provider_uris),
+                    provide_context=True,
+                    execution_timeout=timedelta(hours=15),
+                    dag=dag
+                )
+            else:
+                self.operator = PythonOperator(
+                    task_id=self.task_id,
+                    python_callable=self.export_callable,
+                    provide_context=True,
+                    execution_timeout=timedelta(hours=15),
+                    dag=dag
+                )
         else:
             self.operator = None
 

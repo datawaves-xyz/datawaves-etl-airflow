@@ -38,6 +38,8 @@ def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
             read_var('extract_contracts_toggle', prefix, False, **kwargs)),
         'extract_tokens_toggle': parse_bool(
             read_var('extract_tokens_toggle', prefix, False, **kwargs)),
+        'export_prices_toggle': parse_bool(
+            read_var('export_prices_toggle', prefix, False, **kwargs)),
         # Load
         'load_schedule_interval': read_var('load_schedule_interval', prefix, False, **kwargs),
         'load_spark_conf': read_evm_loader_spark_vars(prefix + 'loader_'),
@@ -62,7 +64,10 @@ def read_evm_loader_spark_vars(prefix: str, **kwargs) -> SparkConf:
 
 
 def read_global_vars(prefix: Optional[str] = None) -> Dict[str, Any]:
-    return {'output_bucket': read_var('output_bucket', prefix, True)}
+    return {
+        'output_bucket': read_var('output_bucket', prefix, True),
+        'coinpaprika_auth_key': read_var('coinpaprika_auth_key', prefix, True)
+    }
 
 
 def read_global_spark_vars(prefix: Optional[str] = None) -> Dict[str, Any]:
