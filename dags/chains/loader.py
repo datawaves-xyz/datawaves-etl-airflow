@@ -23,6 +23,7 @@ temp_table_names = {
 
 
 class Loader:
+    chain: str
     resource: str
     file_format: str
     load_operator: BaseOperator
@@ -34,12 +35,14 @@ class Loader:
 
     def __init__(
             self,
+            chain: str,
             resource: str,
             file_format: str = 'json',
             enrich_toggle: bool = True,
             enrich_dependencies: List[str] = None,
             clean_dependencies: List[str] = None
     ) -> None:
+        self.chain = chain
         self.resource = resource
         self.file_format = file_format
         self.enrich_toggle = enrich_toggle
@@ -72,6 +75,7 @@ class Loader:
 
         load_operator = SparkSubmitOperator(
             task_id=f'load_{self.resource}',
+            name='load_{resource}_{{{{ds_nodash}}}}'.format(resource=self.resource),
             java_class=spark_conf.java_class,
             application=spark_conf.application,
             conf=spark_conf.conf,
@@ -94,6 +98,7 @@ class Loader:
 
             enrich_operator = SparkSubmitOperator(
                 task_id=f'enrich_{self.resource}',
+                name='enrich_{resource}_{{{{ds_nodash}}}}'.format(resource=self.resource),
                 java_class=spark_conf.java_class,
                 application=spark_conf.application,
                 conf=spark_conf.conf,
@@ -115,6 +120,7 @@ class Loader:
 
         clean_operator = SparkSubmitOperator(
             task_id=f'clean_{self.resource}',
+            name='clean_{resource}_{{{{ds_nodash}}}}'.format(resource=self.resource),
             java_class=spark_conf.java_class,
             application=spark_conf.application,
             conf=spark_conf.conf,
@@ -131,8 +137,8 @@ class Loader:
 
     @property
     def export_path(self) -> str:
-        return 'export/{task}/block_date={{{{ds}}}}/{task}.{file_format}'.format(
-            task=self.resource, file_format=self.file_format
+        return 'export/{chain}/{task}/block_date={{{{ds}}}}/{task}.{file_format}'.format(
+            chain=self.chain, task=self.resource, file_format=self.file_format
         )
 
     @property

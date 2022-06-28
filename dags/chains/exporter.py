@@ -55,5 +55,5 @@ class Exporter:
             self.operator = None
 
     @staticmethod
-    def export_folder_path(directory: str, date: datetime) -> str:
-        return f'export/{directory}/block_date={date.strftime("%Y-%m-%d")}/'
+    def export_folder_path(chain: str, directory: str, date: datetime) -> str:
+        return f'export/{chain}/{directory}/block_date={date.strftime("%Y-%m-%d")}/'

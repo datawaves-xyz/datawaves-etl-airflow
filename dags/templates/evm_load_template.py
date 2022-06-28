@@ -236,7 +236,7 @@ def enrich_log_table_sql(database: str, temp_database: str, table: str, temp_tab
                     )                                   AS topics_arr,
                     unhex(substr(logs.data, 3))         AS unhex_data
              FROM `{temp_database}`.`{temp_block_table}` AS blocks
-             JOIN `{{database_temp}}`.`{temp_table}` AS logs
+             JOIN `{temp_database}`.`{temp_table}` AS logs
                  ON blocks.number = logs.block_number)""".format(
         database=database, temp_database=temp_database, table=table, temp_table=temp_table,
         temp_block_table=temp_block_table

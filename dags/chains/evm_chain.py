@@ -22,6 +22,7 @@ from utils.s3_operator import S3Operator
 
 
 def build_evm_exporters(
+        chain: str,
         output_bucket: str,
         export_max_workers: int = 10,
         export_batch_size: int = 10,
@@ -61,13 +62,14 @@ def build_evm_exporters(
                 transactions_output=os.path.join(tempdir, "transactions.json"),
             )
 
-            s3.copy_to_export_path(os.path.join(tempdir, "blocks_meta.txt"), ep("blocks_meta", logical_date))
-            s3.copy_to_export_path(os.path.join(tempdir, "blocks.json"), ep("blocks", logical_date))
-            s3.copy_to_export_path(os.path.join(tempdir, "transactions.json"), ep("transactions", logical_date))
+            s3.copy_to_export_path(os.path.join(tempdir, "blocks_meta.txt"), ep(chain, "blocks_meta", logical_date))
+            s3.copy_to_export_path(os.path.join(tempdir, "blocks.json"), ep(chain, "blocks", logical_date))
+            s3.copy_to_export_path(os.path.join(tempdir, "transactions.json"), ep(chain, "transactions", logical_date))
 
     def export_receipts_and_logs_command(logical_date: datetime, provider_uri: str, **kwargs) -> None:
         with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep("transactions", logical_date), os.path.join(tempdir, "transactions.json"))
+            s3.copy_from_export_path(ep(chain, "transactions", logical_date),
+                                     os.path.join(tempdir, "transactions.json"))
 
             logging.info('Calling extract_csv_column(...)')
             extract_field.callback(
@@ -88,12 +90,12 @@ def build_evm_exporters(
                 logs_output=os.path.join(tempdir, "logs.json"),
             )
 
-            s3.copy_to_export_path(os.path.join(tempdir, "receipts.json"), ep("receipts", logical_date))
-            s3.copy_to_export_path(os.path.join(tempdir, "logs.json"), ep("logs", logical_date))
+            s3.copy_to_export_path(os.path.join(tempdir, "receipts.json"), ep(chain, "receipts", logical_date))
+            s3.copy_to_export_path(os.path.join(tempdir, "logs.json"), ep(chain, "logs", logical_date))
 
     def extract_contracts_command(logical_date: datetime, **kwargs) -> None:
         with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep("traces", logical_date), os.path.join(tempdir, "traces.json"))
+            s3.copy_from_export_path(ep(chain, "traces", logical_date), os.path.join(tempdir, "traces.json"))
 
             logging.info('Calling extract_contracts(..., {}, {})'.format(
                 export_batch_size, export_max_workers
@@ -106,11 +108,11 @@ def build_evm_exporters(
                 max_workers=export_max_workers,
             )
 
-            s3.copy_to_export_path(os.path.join(tempdir, "contracts.json"), ep("contracts", logical_date))
+            s3.copy_to_export_path(os.path.join(tempdir, "contracts.json"), ep(chain, "contracts", logical_date))
 
     def extract_tokens_command(logical_date: datetime, provider_uri: str, **kwargs):
         with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep("contracts", logical_date), os.path.join(tempdir, "contracts.json"))
+            s3.copy_from_export_path(ep(chain, "contracts", logical_date), os.path.join(tempdir, "contracts.json"))
 
             logging.info('Calling extract_tokens(..., {}, {})'.format(export_max_workers, provider_uri))
 
@@ -122,11 +124,11 @@ def build_evm_exporters(
                 values_as_strings=True,
             )
 
-            s3.copy_to_export_path(os.path.join(tempdir, "tokens.json"), ep("tokens", logical_date))
+            s3.copy_to_export_path(os.path.join(tempdir, "tokens.json"), ep(chain, "tokens", logical_date))
 
     def extract_token_transfers_command(logical_date: datetime, **kwargs):
         with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep("logs", logical_date), os.path.join(tempdir, "logs.json"))
+            s3.copy_from_export_path(ep(chain, "logs", logical_date), os.path.join(tempdir, "logs.json"))
 
             logging.info('Calling extract_token_transfers(..., {}, ..., {})'.format(
                 export_batch_size, export_max_workers
@@ -139,7 +141,8 @@ def build_evm_exporters(
                 values_as_strings=True,
             )
 
-            s3.copy_to_export_path(os.path.join(tempdir, "token_transfers.json"), ep("token_transfers", logical_date))
+            s3.copy_to_export_path(os.path.join(tempdir, "token_transfers.json"),
+                                   ep(chain, "token_transfers", logical_date))
 
     def export_traces_command(logical_date: datetime, provider_uri: str, **kwargs):
         with TemporaryDirectory() as tempdir:
@@ -160,7 +163,7 @@ def build_evm_exporters(
                 daofork_traces=export_daofork_traces_option,
             )
 
-            s3.copy_to_export_path(os.path.join(tempdir, "traces.json"), ep("traces", logical_date))
+            s3.copy_to_export_path(os.path.join(tempdir, "traces.json"), ep(chain, "traces", logical_date))
 
     return [
         Exporter(
@@ -200,22 +203,23 @@ def build_evm_exporters(
     ]
 
 
-def build_evm_loaders() -> List[Loader]:
+def build_evm_loaders(chain: str) -> List[Loader]:
     return [
-        Loader(resource='blocks',
+        Loader(chain=chain, resource='blocks',
                clean_dependencies=['transactions', 'logs', 'token_transfers', 'traces', 'contracts']),
-        Loader(resource='transactions', enrich_dependencies=['blocks', 'receipts']),
-        Loader(resource='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
-        Loader(resource='logs', enrich_dependencies=['blocks']),
-        Loader(resource='token_transfers', enrich_dependencies=['blocks']),
-        Loader(resource='traces', enrich_dependencies=['blocks']),
-        Loader(resource='contracts', enrich_dependencies=['blocks']),
-        Loader(resource='tokens'),
-        Loader(resource='prices', file_format='csv')
+        Loader(chain=chain, resource='transactions', enrich_dependencies=['blocks', 'receipts']),
+        Loader(chain=chain, resource='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
+        Loader(chain=chain, resource='logs', enrich_dependencies=['blocks']),
+        Loader(chain=chain, resource='token_transfers', enrich_dependencies=['blocks']),
+        Loader(chain=chain, resource='traces', enrich_dependencies=['blocks']),
+        Loader(chain=chain, resource='contracts', enrich_dependencies=['blocks']),
+        Loader(chain=chain, resource='tokens'),
+        Loader(chain=chain, resource='prices', file_format='csv')
     ]
 
 
 def build_evm_chain(
+        chain: str,
         output_bucket: str,
         export_max_workers: int = 10,
         export_batch_size: int = 10,
@@ -224,17 +228,11 @@ def build_evm_chain(
         notification_emails: Optional[List[str]] = None,
         **kwargs
 ) -> Blockchain:
-    exporters = build_evm_exporters(
-        output_bucket,
-        export_max_workers,
-        export_batch_size,
-        **kwargs
-    )
-
-    loaders = build_evm_loaders()
+    exporters = build_evm_exporters(chain, output_bucket, export_max_workers, export_batch_size, **kwargs)
+    loaders = build_evm_loaders(chain)
 
     return Blockchain(
-        name='ethereum',
+        name=chain,
         exporters=exporters,
         loaders=loaders,
         export_schedule_interval=export_schedule_interval,

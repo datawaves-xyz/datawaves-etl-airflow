@@ -66,7 +66,7 @@ class Blockchain:
     def build_load_dag(self, output_bucket: str, spark_conf: SparkConf) -> DAG:
         load_dag = DAG(
             dag_id=self.load_dag_name,
-            schedule_interval=self.export_schedule_interval,
+            schedule_interval=self.load_schedule_interval,
             default_args=get_default_dag_args(self.notification_emails)
         )
 
@@ -105,4 +105,4 @@ class Blockchain:
 
     @property
     def temp_database_name(self) -> str:
-        return f'{self.name}_temp'
+        return f'{self.name}_raw'
