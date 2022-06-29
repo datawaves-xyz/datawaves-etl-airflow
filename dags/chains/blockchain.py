@@ -28,7 +28,7 @@ class Blockchain:
             export_schedule_interval: str,
             load_schedule_interval: str,
             parse_schedule_interval: str,
-            notification_emails: Optional[List[str]]
+            notification_emails: Optional[List[str]] = None
     ) -> None:
         self.name = name
         self.exporters = exporters

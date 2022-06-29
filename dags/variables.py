@@ -61,13 +61,23 @@ def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
     }
 
 
+def read_transform_vars(prefix: str = 'transform_', **kwargs) -> Dict[str, Any]:
+    return {
+        'spark_conf': read_individual_spark_vars(prefix),
+        'schema_registry_s3_conf': read_global_s3_vars(),
+        'schedule_interval': read_var('schedule_interval', prefix, False, **kwargs),
+        'notification_emails': parse_list(read_var('notification_emails', prefix, False, **kwargs)),
+        **read_global_vars()
+    }
+
+
 def read_individual_spark_vars(prefix: str, **kwargs) -> SparkConf:
     global_spark_vars = read_global_spark_vars()
     global_spark_vars['java_class'] = read_var('spark_java_class', prefix, True)
 
-    loader_spark_conf = parse_dict(read_var('spark_conf', prefix, False))
-    if loader_spark_conf is not None:
-        global_spark_vars['conf'].update(loader_spark_conf)
+    load_spark_conf = parse_dict(read_var('spark_conf', prefix, False))
+    if load_spark_conf is not None:
+        global_spark_vars['conf'].update(load_spark_conf)
 
     loader_spark_args = parse_list(read_var('spark_application_args', prefix, False))
     global_spark_vars['application_args'] = loader_spark_args if loader_spark_args is not None else []

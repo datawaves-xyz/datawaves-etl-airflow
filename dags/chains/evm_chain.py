@@ -244,7 +244,7 @@ def build_evm_loaders(chain: str) -> List[Loader]:
     ]
 
 
-def build_evm_parser(chain: str) -> List[Parser]:
+def build_evm_parsers(chain: str) -> List[Parser]:
     parsers: List[Parser] = []
     for folder in dataset_folders(chain):
         json_files = get_list_of_files(folder)
@@ -267,7 +267,7 @@ def build_evm_chain(
 ) -> Blockchain:
     exporters = build_evm_exporters(chain, output_bucket, export_max_workers, export_batch_size, **kwargs)
     loaders = build_evm_loaders(chain)
-    parsers = build_evm_parser(chain)
+    parsers = build_evm_parsers(chain)
 
     return Blockchain(
         name=chain,
