@@ -4,16 +4,19 @@ from airflow import DAG
 
 from chains.exporter import Exporter
 from chains.loader import Loader
+from chains.parser import Parser
 from constant import get_default_dag_args
-from variables import SparkConf
+from variables import SparkConf, S3Conf
 
 
 class Blockchain:
     name: str
     exporters: List[Exporter]
     loaders: List[Loader]
+    parsers: List[Parser]
     export_schedule_interval: str
     load_schedule_interval: str
+    parse_schedule_interval: str
     notification_emails: Optional[List[str]]
 
     def __init__(
@@ -21,15 +24,19 @@ class Blockchain:
             name: str,
             exporters: List[Exporter],
             loaders: List[Loader],
+            parsers: List[Parser],
             export_schedule_interval: str,
             load_schedule_interval: str,
+            parse_schedule_interval: str,
             notification_emails: Optional[List[str]]
     ) -> None:
         self.name = name
         self.exporters = exporters
         self.loaders = loaders
+        self.parsers = parsers
         self.export_schedule_interval = export_schedule_interval
         self.load_schedule_interval = load_schedule_interval
+        self.parse_schedule_interval = parse_schedule_interval
         self.notification_emails = notification_emails
 
     def build_all_dags(
@@ -37,11 +44,14 @@ class Blockchain:
             output_bucket: str,
             provider_uris: List[str],
             load_spark_conf: SparkConf,
+            parse_spark_conf: SparkConf,
+            parse_s3_conf: S3Conf,
             **kwargs
     ) -> List[DAG]:
         return [
             self.build_export_dag(provider_uris),
-            self.build_load_dag(output_bucket, load_spark_conf)
+            self.build_load_dag(output_bucket, load_spark_conf),
+            *self.build_parse_dags(parse_spark_conf, parse_s3_conf),
         ]
 
     def build_export_dag(self, provider_uris: List[str]) -> DAG:
@@ -90,6 +100,20 @@ class Blockchain:
                 loader_map[clean_dependency].enrich_operator >> loader.clean_operator
 
         return load_dag
+
+    def build_parse_dags(self, spark_conf: SparkConf, s3_conf: S3Conf) -> List[DAG]:
+        parse_dags: List[DAG] = []
+        for parser in self.parsers:
+            parse_dag = DAG(
+                dag_id=parser.dag_id,
+                schedule_interval=self.parse_schedule_interval,
+                default_args=get_default_dag_args(self.notification_emails)
+            )
+
+            parser.gen_operators(dag=parse_dag, spark_conf=spark_conf, s3_conf=s3_conf)
+            parse_dags.append(parse_dag)
+
+        return parse_dags
 
     @property
     def load_dag_name(self) -> str:

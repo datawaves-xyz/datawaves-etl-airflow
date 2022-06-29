@@ -15,6 +15,14 @@ class SparkConf(DataClassDictMixin):
     application_args: List[str]
 
 
+@dataclass
+class S3Conf(DataClassDictMixin):
+    access_key: str
+    secret_key: str
+    bucket: str
+    region: str
+
+
 def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
     return {
         # Export
@@ -42,20 +50,24 @@ def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
             read_var('export_prices_toggle', prefix, False, **kwargs)),
         # Load
         'load_schedule_interval': read_var('load_schedule_interval', prefix, False, **kwargs),
-        'load_spark_conf': read_evm_loader_spark_vars(prefix + 'loader_'),
+        'load_spark_conf': read_individual_spark_vars(prefix + 'loader_'),
+        # Parse
+        'parse_schedule_interval': read_var('parse_schedule_interval', prefix, False, **kwargs),
+        'parse_spark_conf': read_individual_spark_vars(prefix + 'parser_'),
+        'parse_s3_conf': read_global_s3_vars(),
         # Common
         'notification_emails': parse_list(read_var('notification_emails', prefix, False, **kwargs)),
         **read_global_vars(),
     }
 
 
-def read_evm_loader_spark_vars(prefix: str, **kwargs) -> SparkConf:
+def read_individual_spark_vars(prefix: str, **kwargs) -> SparkConf:
     global_spark_vars = read_global_spark_vars()
     global_spark_vars['java_class'] = read_var('spark_java_class', prefix, True)
 
     loader_spark_conf = parse_dict(read_var('spark_conf', prefix, False))
     if loader_spark_conf is not None:
-        global_spark_vars['conf'].extend(loader_spark_conf)
+        global_spark_vars['conf'].update(loader_spark_conf)
 
     loader_spark_args = parse_list(read_var('spark_application_args', prefix, False))
     global_spark_vars['application_args'] = loader_spark_args if loader_spark_args is not None else []
@@ -76,6 +88,10 @@ def read_global_spark_vars(prefix: Optional[str] = None) -> Dict[str, Any]:
         'application': read_var('spark_application', prefix, True),
         'conf': parse_dict(read_var('spark_conf', prefix, True))
     }
+
+
+def read_global_s3_vars(prefix: Optional[str] = None) -> S3Conf:
+    return S3Conf.from_dict(parse_dict(read_var('s3_conf', prefix, True)))
 
 
 def read_var(

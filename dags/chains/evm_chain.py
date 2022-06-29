@@ -16,9 +16,12 @@ from ethereumetl.cli import (
 from pendulum import datetime
 
 from chains.blockchain import Blockchain
+from chains.contracts import EvmContract
 from chains.exporter import Exporter
 from chains.loader import Loader
+from chains.parser import Parser, EvmParser
 from offchains.prices import CoinpaprikaPriceProvider
+from utils.common import dataset_folders, get_list_of_files, read_json_file
 from utils.s3_operator import S3Operator
 
 
@@ -241,6 +244,16 @@ def build_evm_loaders(chain: str) -> List[Loader]:
     ]
 
 
+def build_evm_parser(chain: str) -> List[Parser]:
+    parsers: List[Parser] = []
+    for folder in dataset_folders(chain):
+        json_files = get_list_of_files(folder)
+        contracts = [EvmContract.from_dict(read_json_file(json_file)) for json_file in json_files]
+        parsers.append(EvmParser(chain, contracts))
+
+    return parsers
+
+
 def build_evm_chain(
         chain: str,
         output_bucket: str,
@@ -248,17 +261,21 @@ def build_evm_chain(
         export_batch_size: int = 10,
         export_schedule_interval: str = '30 0 * * *',
         load_schedule_interval: str = '0 1 * * *',
+        parse_schedule_interval: str = '30 1 * * *',
         notification_emails: Optional[List[str]] = None,
         **kwargs
 ) -> Blockchain:
     exporters = build_evm_exporters(chain, output_bucket, export_max_workers, export_batch_size, **kwargs)
     loaders = build_evm_loaders(chain)
+    parsers = build_evm_parser(chain)
 
     return Blockchain(
         name=chain,
         exporters=exporters,
         loaders=loaders,
+        parsers=parsers,
         export_schedule_interval=export_schedule_interval,
         load_schedule_interval=load_schedule_interval,
+        parse_schedule_interval=parse_schedule_interval,
         notification_emails=notification_emails
     )
