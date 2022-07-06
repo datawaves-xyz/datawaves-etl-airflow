@@ -276,11 +276,10 @@ def build_polygon_exporters(
             s3.copy_to_export_path(os.path.join(tempdir, "blocks.json"), ep(chain, "blocks", logical_date))
             s3.copy_to_export_path(os.path.join(tempdir, "transactions.json"), ep(chain, "transactions", logical_date))
 
-
     def export_receipts_and_logs_command(logical_date: datetime, provider_uri: str, **kwargs) -> None:
         with TemporaryDirectory() as tempdir:
             s3.copy_from_export_path(ep(chain, "transactions", logical_date),
-                                        os.path.join(tempdir, "transactions.json"))
+                                     os.path.join(tempdir, "transactions.json"))
 
             logging.info('Calling extract_csv_column(...)')
             extract_field.callback(
@@ -304,7 +303,6 @@ def build_polygon_exporters(
             s3.copy_to_export_path(os.path.join(tempdir, "receipts.json"), ep(chain, "receipts", logical_date))
             s3.copy_to_export_path(os.path.join(tempdir, "logs.json"), ep(chain, "logs", logical_date))
 
-
     def extract_contracts_command(logical_date: datetime, **kwargs) -> None:
         with TemporaryDirectory() as tempdir:
             s3.copy_from_export_path(ep(chain, "traces", logical_date), os.path.join(tempdir, "traces.json"))
@@ -322,7 +320,6 @@ def build_polygon_exporters(
 
             s3.copy_to_export_path(os.path.join(tempdir, "contracts.json"), ep(chain, "contracts", logical_date))
 
-
     def extract_tokens_command(logical_date: datetime, provider_uri: str, **kwargs):
         with TemporaryDirectory() as tempdir:
             s3.copy_from_export_path(ep(chain, "contracts", logical_date), os.path.join(tempdir, "contracts.json"))
@@ -338,7 +335,6 @@ def build_polygon_exporters(
             )
 
             s3.copy_to_export_path(os.path.join(tempdir, "tokens.json"), ep(chain, "tokens", logical_date))
-
 
     def extract_token_transfers_command(logical_date: datetime, **kwargs):
         with TemporaryDirectory() as tempdir:
@@ -356,8 +352,7 @@ def build_polygon_exporters(
             )
 
             s3.copy_to_export_path(os.path.join(tempdir, "token_transfers.json"),
-                                    ep(chain, "token_transfers", logical_date))
-
+                                   ep(chain, "token_transfers", logical_date))
 
     def export_traces_command(logical_date: datetime, provider_uri: str, **kwargs):
         with TemporaryDirectory() as tempdir:
@@ -432,11 +427,13 @@ def build_polygon_exporters(
         )
     ]
 
+
 def build_evm_loaders(chain: str) -> List[Loader]:
     return [
         Loader(chain=chain, resource='blocks',
                clean_dependencies=['transactions', 'logs', 'token_transfers', 'traces', 'contracts']),
-        Loader(chain=chain, resource='transactions', enrich_dependencies=['blocks', 'receipts']),
+        Loader(chain=chain, resource='transactions', enrich_dependencies=['blocks', 'receipts'],
+               clean_dependencies=['traces']),
         Loader(chain=chain, resource='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
         Loader(chain=chain, resource='logs', enrich_dependencies=['blocks']),
         Loader(chain=chain, resource='token_transfers', enrich_dependencies=['blocks']),
@@ -467,7 +464,6 @@ def build_evm_chain(
         notification_emails: Optional[List[str]] = None,
         **kwargs
 ) -> Blockchain:
-
     if chain == 'polygon':
         exporters = build_polygon_exporters(chain, output_bucket, export_max_workers, export_batch_size, **kwargs)
         loaders = build_evm_loaders(chain)
