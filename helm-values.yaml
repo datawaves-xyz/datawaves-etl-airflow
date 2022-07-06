@@ -63,7 +63,7 @@ config:
   core:
     parallelism: 64
   celery:
-    worker_concurrency: 16
+    worker_concurrency: 8
 
 workers:
   replicas: 0
@@ -85,7 +85,7 @@ workers:
     # Minimum number of workers created by keda
     minReplicaCount: 0
     # Maximum number of workers created by keda
-    maxReplicaCount: 4
+    maxReplicaCount: 8
 
   extraInitContainers:
    - name: volume-logs
