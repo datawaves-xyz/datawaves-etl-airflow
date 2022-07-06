@@ -333,7 +333,7 @@ def enrich_trace_table_sql(database: str, temp_database: str, table: str, temp_t
         ON blocks.number = traces.block_number
     """.format(
         database=database, temp_database=temp_database, table=table, temp_table=temp_table,
-        temp_block_table=temp_block_table, temp_transaction_table=temp_transaction_table
+        temp_block_table=temp_block_table
     )
 
 def enrich_geth_trace_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
