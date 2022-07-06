@@ -305,6 +305,7 @@ def enrich_trace_table_sql(database: str, temp_database: str, table: str, temp_t
     return """INSERT OVERWRITE TABLE `{database}`.`{table}`
     PARTITION (dt = date '{{{{ds}}}}', address_hash, selector_hash)
     SELECT /*+ REPARTITION(1) */
+        transactions.hash                           AS transaction_hash,
         traces.transaction_index,
         traces.from_address,
         traces.to_address,
@@ -321,7 +322,6 @@ def enrich_trace_table_sql(database: str, temp_database: str, table: str, temp_t
         traces.error,
         traces.status,
         traces.trace_id,
-        transactions.hash                           AS transaction_hash,
         TIMESTAMP_SECONDS(blocks.timestamp)         AS block_timestamp,
         blocks.number                               AS block_number,
         blocks.hash                                 AS block_hash,
