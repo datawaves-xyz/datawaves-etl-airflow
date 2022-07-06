@@ -440,7 +440,7 @@ def build_evm_loaders(chain: str) -> List[Loader]:
         Loader(chain=chain, resource='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
         Loader(chain=chain, resource='logs', enrich_dependencies=['blocks']),
         Loader(chain=chain, resource='token_transfers', enrich_dependencies=['blocks']),
-        Loader(chain=chain, resource='traces', enrich_dependencies=['blocks']),
+        Loader(chain=chain, resource='traces', enrich_dependencies=['blocks', 'transactions']),
         Loader(chain=chain, resource='contracts', enrich_dependencies=['blocks']),
         Loader(chain=chain, resource='tokens')
     ]
