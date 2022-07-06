@@ -278,7 +278,6 @@ def enrich_token_transfer_table_sql(database: str, temp_database: str, table: st
         temp_block_table=temp_block_table
     )
 
-
 def enrich_token_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     return """INSERT INTO TABLE `{database}`.`{table}`
     SELECT /*+ REPARTITION(1) */
@@ -297,8 +296,47 @@ def enrich_token_table_sql(database: str, temp_database: str, table: str, temp_t
         database=database, temp_database=temp_database, table=table, temp_table=temp_table
     )
 
-
 def enrich_trace_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
+    temp_block_table = kwargs['temp_block_table']
+    temp_transaction_table = kwargs['temp_transaction_table']
+
+    return """INSERT OVERWRITE TABLE `{database}`.`{table}`
+    PARTITION (dt = date '{{{{ds}}}}', address_hash, selector_hash)
+    SELECT /*+ REPARTITION(1) */
+        traces.transaction_hash                     AS transaction_hash,
+        traces.transaction_index,
+        traces.from_address,
+        traces.to_address,
+        traces.value,
+        traces.input,
+        traces.output,
+        traces.trace_type,
+        traces.call_type,
+        traces.reward_type,
+        traces.gas,
+        traces.gas_used,
+        traces.subtraces,
+        traces.trace_address,
+        traces.error,
+        traces.status,
+        traces.trace_id,
+        TIMESTAMP_SECONDS(blocks.timestamp)         AS block_timestamp,
+        blocks.number                               AS block_number,
+        blocks.hash                                 AS block_hash,
+        substr(traces.input, 1, 10)                 AS selector,
+        unhex(substr(traces.input, 3))              AS unhex_input,
+        unhex(substr(traces.output, 3))             AS unhex_output,
+        abs(hash(traces.to_address)) % 10           AS address_hash,
+        abs(hash(substr(traces.input, 1, 10))) % 10 AS selector_hash
+    FROM `{temp_database}`.`{temp_block_table}` AS blocks
+    JOIN `{temp_database}`.`{temp_table}` AS traces
+        ON blocks.number = traces.block_number
+    """.format(
+        database=database, temp_database=temp_database, table=table, temp_table=temp_table,
+        temp_block_table=temp_block_table, temp_transaction_table=temp_transaction_table
+    )
+
+def enrich_geth_trace_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     temp_block_table = kwargs['temp_block_table']
     temp_transaction_table = kwargs['temp_transaction_table']
 
@@ -340,7 +378,6 @@ def enrich_trace_table_sql(database: str, temp_database: str, table: str, temp_t
         database=database, temp_database=temp_database, table=table, temp_table=temp_table,
         temp_block_table=temp_block_table, temp_transaction_table=temp_transaction_table
     )
-
 
 def enrich_transaction_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     temp_block_table = kwargs['temp_block_table']
@@ -392,6 +429,7 @@ load_temp_table_template_map: Dict[str, Callable[[str, str, str, str], str]] = {
     'token_transfers': create_temp_token_transfer_table_sql,
     'tokens': create_temp_token_table_sql,
     'traces': create_temp_traces_table_sql,
+    'geth_traces': create_temp_traces_table_sql,
     'transactions': create_temp_transaction_table_sql
 }
 
@@ -403,5 +441,6 @@ enrich_table_template_map: Dict[str, Callable[[str, str, str, str, Dict[str, Any
     'token_transfers': enrich_token_transfer_table_sql,
     'tokens': enrich_token_table_sql,
     'traces': enrich_trace_table_sql,
+    'geth_traces': enrich_geth_trace_table_sql,
     'transactions': enrich_transaction_table_sql
 }

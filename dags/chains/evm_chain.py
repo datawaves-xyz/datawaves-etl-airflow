@@ -432,12 +432,27 @@ def build_evm_loaders(chain: str) -> List[Loader]:
     return [
         Loader(chain=chain, resource='blocks',
                clean_dependencies=['transactions', 'logs', 'token_transfers', 'traces', 'contracts']),
+        Loader(chain=chain, resource='transactions', enrich_dependencies=['blocks', 'receipts']),
+        Loader(chain=chain, resource='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
+        Loader(chain=chain, resource='logs', enrich_dependencies=['blocks']),
+        Loader(chain=chain, resource='token_transfers', enrich_dependencies=['blocks']),
+        Loader(chain=chain, resource='traces', enrich_dependencies=['blocks']),
+        Loader(chain=chain, resource='contracts', enrich_dependencies=['blocks']),
+        Loader(chain=chain, resource='tokens'),
+        Loader(chain=chain, resource='prices', file_format='csv')
+    ]
+
+
+def build_polygon_loaders(chain: str) -> List[Loader]:
+    return [
+        Loader(chain=chain, resource='blocks',
+               clean_dependencies=['transactions', 'logs', 'token_transfers', 'traces', 'contracts']),
         Loader(chain=chain, resource='transactions', enrich_dependencies=['blocks', 'receipts'],
                clean_dependencies=['traces']),
         Loader(chain=chain, resource='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
         Loader(chain=chain, resource='logs', enrich_dependencies=['blocks']),
         Loader(chain=chain, resource='token_transfers', enrich_dependencies=['blocks']),
-        Loader(chain=chain, resource='traces', enrich_dependencies=['blocks', 'transactions']),
+        Loader(chain=chain, resource='geth_traces', enrich_dependencies=['blocks', 'transactions']),
         Loader(chain=chain, resource='contracts', enrich_dependencies=['blocks']),
         Loader(chain=chain, resource='tokens')
     ]
@@ -466,11 +481,10 @@ def build_evm_chain(
 ) -> Blockchain:
     if chain == 'polygon':
         exporters = build_polygon_exporters(chain, output_bucket, export_max_workers, export_batch_size, **kwargs)
-        loaders = build_evm_loaders(chain)
+        loaders = build_polygon_loaders(chain)
     else:
         exporters = build_evm_exporters(chain, output_bucket, export_max_workers, export_batch_size, **kwargs)
         loaders = build_evm_loaders(chain)
-        loaders.append(Loader(chain=chain, resource='prices', file_format='csv'))
 
     parsers = build_evm_parsers(chain)
 
