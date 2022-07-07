@@ -240,8 +240,6 @@ def build_polygon_exporters(
 ) -> List[Exporter]:
     s3 = S3Operator(aws_conn_id='aws_default', bucket=output_bucket)
     ep = Exporter.export_folder_path
-    export_daofork_traces_option = False
-    export_genesis_traces_option = False
 
     def get_block_range(tempdir: str, date: datetime, provider_uri: str) -> Tuple[int, int]:
         logging.info(f'Calling get_block_range_for_date({provider_uri}, {date}, ...)')
@@ -358,9 +356,8 @@ def build_polygon_exporters(
         with TemporaryDirectory() as tempdir:
             start_block, end_block = get_block_range(tempdir, logical_date, provider_uri)
 
-            logging.info('Calling export_geth_traces({}, {}, {}, ..., {}, {}, {}, {})'.format(
-                start_block, end_block, export_batch_size, export_max_workers, provider_uri,
-                export_genesis_traces_option, export_daofork_traces_option
+            logging.info('Calling export_geth_traces({}, {}, {}, ..., {}, {})'.format(
+                start_block, end_block, export_batch_size, export_max_workers, provider_uri
             ))
 
             export_geth_traces.callback(
@@ -369,9 +366,7 @@ def build_polygon_exporters(
                 batch_size=export_batch_size,
                 output=os.path.join(tempdir, "geth_traces.json"),
                 max_workers=export_max_workers,
-                provider_uri=provider_uri,
-                genesis_traces=export_genesis_traces_option,
-                daofork_traces=export_daofork_traces_option,
+                provider_uri=provider_uri
             )
 
             logging.info('Calling extract_geth_traces({}, {}, {}, ..., {}, {})'.format(
