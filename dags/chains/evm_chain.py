@@ -369,16 +369,15 @@ def build_polygon_exporters(
                 provider_uri=provider_uri
             )
 
-            logging.info('Calling extract_geth_traces({}, ..., {}, {})'.format(
-                export_batch_size, export_max_workers, provider_uri
+            logging.info('Calling extract_geth_traces({}, ..., {})'.format(
+                export_batch_size, export_max_workers
             ))
 
             extract_geth_traces.callback(
                 batch_size=export_batch_size,
                 input=os.path.join(tempdir, "geth_traces_temp.json"),
                 output=os.path.join(tempdir, "geth_traces.json"),
-                max_workers=export_max_workers,
-                provider_uri=provider_uri,
+                max_workers=export_max_workers
             )
 
             s3.copy_to_export_path(os.path.join(tempdir, "geth_traces.json"), ep(chain, "geth_traces", logical_date))
