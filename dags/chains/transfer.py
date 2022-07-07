@@ -6,14 +6,14 @@ from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOpe
 from airflow.sensors.external_task import ExternalTaskSensor
 
 from chains.resource_apply import get_raw_table_spark_resource, get_abi_table_spark_resource
-from chains.transfer_client import TransformClient
+from chains.transfer_client import TransferClient
 from variables import SparkConf, S3Conf
 
 
 class Transfer:
-    client: TransformClient
+    client: TransferClient
 
-    def __init__(self, client: TransformClient):
+    def __init__(self, client: TransferClient):
         self.client = client
 
     def gen_operators(self, dag: DAG, spark_conf: SparkConf, schema_registry_s3_conf: S3Conf) -> None:

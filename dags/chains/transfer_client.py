@@ -33,7 +33,7 @@ class DatabricksClientConfig(ClientConfig):
 
 
 @dataclass(frozen=True)
-class TransformABI(DataClassDictMixin):
+class TransferABI(DataClassDictMixin):
     chain: str
     dataset_name: str
     contract_name: str
@@ -54,7 +54,7 @@ class TransformABI(DataClassDictMixin):
 
 
 @dataclass(frozen=True)
-class TransformRawTable(DataClassDictMixin):
+class TransferRawTable(DataClassDictMixin):
     chain: str
     table: str
 
@@ -72,15 +72,15 @@ class TransformRawTable(DataClassDictMixin):
 
 
 @dataclass(frozen=True)
-class TransformClient(DataClassDictMixin):
+class TransferClient(DataClassDictMixin):
     company: str
-    raws: List[TransformRawTable]
-    abis: List[TransformABI]
+    raws: List[TransferRawTable]
+    abis: List[TransferABI]
     config: Union[DatabricksClientConfig]
 
     @property
     def dag_name(self) -> str:
-        return f'transform_{self.company.lower()}_dag'
+        return f'transfer_{self.company.lower()}_dag'
 
     @property
     def application_args(self) -> List[any]:
@@ -89,4 +89,4 @@ class TransformClient(DataClassDictMixin):
 
 @dataclass(frozen=True)
 class TransformConfig(DataClassDictMixin):
-    clients: List[TransformClient]
+    clients: List[TransferClient]

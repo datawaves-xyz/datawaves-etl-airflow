@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, List, Dict
 
-from chains.transfer_client import TransformRawTable, TransformABI
+from chains.transfer_client import TransferRawTable, TransferABI
 
 
 @dataclass(frozen=True)
@@ -43,15 +43,17 @@ transfer_tasks_resource = [
             ABIElement(chain='ethereum', table_name='logs')
         ],
         resource=SparkResource(
-            executor_cores=4,
-            executor_memory=4,
-            executor_instances=4
+            executor_cores=3,
+            executor_memory=16,
+            executor_instances=4,
+            driver_cores=2,
+            driver_memory=4
         )
     )
 ]
 
 
-def get_raw_table_spark_resource(raw_table: TransformRawTable) -> Optional[Dict[str, str]]:
+def get_raw_table_spark_resource(raw_table: TransferRawTable) -> Optional[Dict[str, str]]:
     for resource in transfer_tasks_resource:
         for task in resource.tasks:
             if task.chain == raw_table.chain and task.table_name == raw_table.table:
@@ -59,7 +61,7 @@ def get_raw_table_spark_resource(raw_table: TransformRawTable) -> Optional[Dict[
     return None
 
 
-def get_abi_table_spark_resource(abi: TransformABI) -> Optional[Dict[str, str]]:
+def get_abi_table_spark_resource(abi: TransferABI) -> Optional[Dict[str, str]]:
     for resource in transfer_tasks_resource:
         for task in resource.tasks:
             if task.chain == abi.chain and \
