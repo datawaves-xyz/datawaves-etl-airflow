@@ -369,13 +369,11 @@ def build_polygon_exporters(
                 provider_uri=provider_uri
             )
 
-            logging.info('Calling extract_geth_traces({}, {}, {}, ..., {}, {})'.format(
-                start_block, end_block, export_batch_size, export_max_workers, provider_uri
+            logging.info('Calling extract_geth_traces({}, ..., {}, {})'.format(
+                export_batch_size, export_max_workers, provider_uri
             ))
 
             extract_geth_traces.callback(
-                start_block=start_block,
-                end_block=end_block,
                 batch_size=export_batch_size,
                 input=os.path.join(tempdir, "geth_traces_temp.json"),
                 output=os.path.join(tempdir, "geth_traces.json"),
