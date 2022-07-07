@@ -61,7 +61,7 @@ def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
     }
 
 
-def read_transform_vars(prefix: str = 'transform_', **kwargs) -> Dict[str, Any]:
+def read_transfer_vars(prefix: str = 'transfer_', **kwargs) -> Dict[str, Any]:
     return {
         'spark_conf': read_individual_spark_vars(prefix),
         'schema_registry_s3_conf': read_global_s3_vars(),

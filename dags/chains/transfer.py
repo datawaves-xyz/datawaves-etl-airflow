@@ -1,9 +1,11 @@
 from datetime import timedelta
+from typing import Dict
 
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 
+from chains.resource_apply import get_raw_table_spark_resource, get_abi_table_spark_resource
 from chains.transfer_client import TransformClient
 from variables import SparkConf, S3Conf
 
@@ -17,16 +19,25 @@ class Transfer:
     def gen_operators(self, dag: DAG, spark_conf: SparkConf, schema_registry_s3_conf: S3Conf) -> None:
         for raw in self.client.raws:
             sensor_id = f'wait_for_{raw.upstream_task_name}'
-            task_id = f'transform_{raw.upstream_task_name}'
+            task_id = f'transfer_{raw.upstream_task_name}'
 
-            args = []
-            args += spark_conf.application_args
-            args += self.client.application_args
-            args += [
+            spark_config: Dict[str, str] = spark_conf.conf
+            raw_table_spark_resource_conf = get_raw_table_spark_resource(raw)
+            if raw_table_spark_resource_conf is not None:
+                spark_config.update(raw_table_spark_resource_conf)
+
+            abi_element_args = [
                 '--chain',
                 raw.chain,
                 '--table-name',
                 raw.table,
+            ]
+
+            args = []
+            args += spark_conf.application_args
+            args += self.client.application_args
+            args += abi_element_args
+            args += [
                 '--dt',
                 '{{ds}}'
             ]
@@ -48,7 +59,7 @@ class Transfer:
                 name=task_id,
                 java_class=spark_conf.java_class,
                 application=spark_conf.application,
-                conf=spark_conf.conf,
+                conf=spark_config,
                 jars=spark_conf.jars,
                 application_args=args,
                 dag=dag
@@ -58,18 +69,14 @@ class Transfer:
 
         for abi in self.client.abis:
             sensor_id = f'wait_for_{abi.upstream_task_name}'
-            task_id = f'transform_{abi.upstream_task_name}'
+            task_id = f'transfer_{abi.upstream_task_name}'
 
-            args = []
-            args += spark_conf.application_args
-            args += self.client.application_args
-            args += [
-                '--schema-registry-s3-access-key',
-                schema_registry_s3_conf.access_key,
-                '--schema-registry-s3-secret-key',
-                schema_registry_s3_conf.secret_key,
-                '--schema-registry-s3-region',
-                schema_registry_s3_conf.region,
+            spark_config: Dict[str, str] = spark_conf.conf
+            abi_table_spark_resource_conf = get_abi_table_spark_resource(abi)
+            if abi_table_spark_resource_conf is not None:
+                spark_config.update(abi_table_spark_resource_conf)
+
+            abi_element_args = [
                 '--chain',
                 abi.chain,
                 '--group-name',
@@ -80,6 +87,19 @@ class Transfer:
                 abi.abi_type,
                 '--abi-name',
                 abi.abi_name,
+            ]
+
+            args = []
+            args += spark_conf.application_args
+            args += self.client.application_args
+            args += abi_element_args
+            args += [
+                '--schema-registry-s3-access-key',
+                schema_registry_s3_conf.access_key,
+                '--schema-registry-s3-secret-key',
+                schema_registry_s3_conf.secret_key,
+                '--schema-registry-s3-region',
+                schema_registry_s3_conf.region,
                 '--dt',
                 '{{ds}}'
             ]
@@ -101,7 +121,7 @@ class Transfer:
                 name=task_id,
                 java_class=spark_conf.java_class,
                 application=spark_conf.application,
-                conf=spark_conf.conf,
+                conf=spark_config,
                 jars=spark_conf.jars,
                 application_args=args,
                 dag=dag

@@ -3,7 +3,7 @@ from typing import List, Optional
 from chains.transfer import Transfer
 from chains.transfer_client import TransformConfig
 from constant import get_default_dag_args
-from variables import SparkConf, S3Conf, read_transform_vars, parse_dict, read_var
+from variables import SparkConf, S3Conf, read_transfer_vars, parse_dict, read_var
 
 try:
     from airflow import DAG
@@ -33,10 +33,10 @@ def build_dags(
     return dags
 
 
-transform_vars = read_transform_vars(schedule_interval='0 2 * * *')
+transfer_vars = read_transfer_vars(schedule_interval='0 2 * * *')
 
 # TODO: use api
-config = TransformConfig.from_dict(parse_dict(read_var(var_name='transform_config', required=True)))
+config = TransformConfig.from_dict(parse_dict(read_var(var_name='transfer_config', required=True)))
 
-for dag in build_dags(transform_config=config, **transform_vars):
+for dag in build_dags(transform_config=config, **transfer_vars):
     globals()[dag.dag_id] = dag
