@@ -374,10 +374,9 @@ def build_polygon_exporters(
             ))
 
             extract_geth_traces.callback(
-                batch_size=export_batch_size,
                 input=os.path.join(tempdir, "geth_traces_temp.json"),
                 output=os.path.join(tempdir, "geth_traces.json"),
-                max_workers=export_max_workers
+                max_workers=1
             )
 
             s3.copy_to_export_path(os.path.join(tempdir, "geth_traces.json"), ep(chain, "geth_traces", logical_date))
