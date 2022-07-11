@@ -20,6 +20,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29 \
   && apt-get install -qy  \
     python3-dev \
     gcc \
+    git \
     "openjdk-${OPENJDK_VERSION}-jre-headless" \
     curl \
     less \
