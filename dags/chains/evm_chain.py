@@ -303,14 +303,14 @@ def build_polygon_exporters(
 
     def extract_contracts_command(logical_date: datetime, **kwargs) -> None:
         with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep(chain, "traces", logical_date), os.path.join(tempdir, "traces.json"))
+            s3.copy_from_export_path(ep(chain, "geth_traces", logical_date), os.path.join(tempdir, "geth_traces.json"))
 
             logging.info('Calling extract_contracts(..., {}, {})'.format(
                 export_batch_size, export_max_workers
             ))
 
             extract_contracts.callback(
-                traces=os.path.join(tempdir, "traces.json"),
+                traces=os.path.join(tempdir, "geth_traces.json"),
                 output=os.path.join(tempdir, "contracts.json"),
                 batch_size=export_batch_size,
                 max_workers=export_max_workers,
