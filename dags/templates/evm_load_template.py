@@ -298,7 +298,6 @@ def enrich_token_table_sql(database: str, temp_database: str, table: str, temp_t
 
 def enrich_trace_table_sql(database: str, temp_database: str, table: str, temp_table: str, **kwargs) -> str:
     temp_block_table = kwargs['temp_block_table']
-    temp_transaction_table = kwargs['temp_transaction_table']
 
     return """INSERT OVERWRITE TABLE `{database}`.`{table}`
     PARTITION (dt = date '{{{{ds}}}}', address_hash, selector_hash)
@@ -340,7 +339,7 @@ def enrich_geth_trace_table_sql(database: str, temp_database: str, table: str, t
     temp_block_table = kwargs['temp_block_table']
     temp_transaction_table = kwargs['temp_transaction_table']
 
-    return """INSERT OVERWRITE TABLE `{database}`.`{table}`
+    return """INSERT OVERWRITE TABLE `{database}`.`traces`
     PARTITION (dt = date '{{{{ds}}}}', address_hash, selector_hash)
     SELECT /*+ REPARTITION(1) */
         transactions.hash                           AS transaction_hash,
