@@ -111,7 +111,7 @@ class Loader:
             custom_spark_conf = copy.deepcopy(spark_conf.conf)
             enrich_operator_custom_spark_conf = enrich_operator_spark_conf_map.get(self.resource)
             if enrich_operator_custom_spark_conf is not None:
-                custom_spark_conf.update(enrich_operator_custom_spark_conf)
+                custom_spark_conf.update(enrich_operator_custom_spark_conf.__dict__())
 
             enrich_operator = SparkSubmitOperator(
                 task_id=f'enrich_{self.resource}',
