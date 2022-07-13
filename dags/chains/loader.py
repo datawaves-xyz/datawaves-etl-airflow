@@ -8,6 +8,9 @@ from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOpe
 
 from templates.evm_load_template import load_temp_table_template_map, enrich_table_template_map, drop_table_sql
 from variables import SparkConf
+from resource_apply import SparkResource
+
+import copy
 
 temp_table_names = {
     'temp_block_table': 'blocks_{{ds_nodash}}',
@@ -21,6 +24,15 @@ temp_table_names = {
     'temp_receipt_table': 'receipts_{{ds_nodash}}'
 }
 
+enrich_operator_spark_conf_map = {
+    'geth_traces': SparkResource(
+        executor_cores=2,
+        executor_memory=10,
+        executor_instances=2,
+        driver_cores=1,
+        driver_memory=2
+    )
+}
 
 class Loader:
     chain: str
@@ -96,12 +108,17 @@ class Loader:
                 **temp_table_names
             )
 
+            custom_spark_conf = copy.deepcopy(spark_conf.conf)
+            enrich_operator_custom_spark_conf = enrich_operator_spark_conf_map.get(self.resource)
+            if enrich_operator_custom_spark_conf is not None:
+                custom_spark_conf.update(enrich_operator_custom_spark_conf)
+
             enrich_operator = SparkSubmitOperator(
                 task_id=f'enrich_{self.resource}',
                 name='enrich_{resource}_{{{{ds_nodash}}}}'.format(resource=self.resource),
                 java_class=spark_conf.java_class,
                 application=spark_conf.application,
-                conf=spark_conf.conf,
+                conf=custom_spark_conf,
                 jars=spark_conf.jars,
                 application_args=['--sql', enrich_sql],
                 dag=dag
