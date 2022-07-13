@@ -8,7 +8,7 @@ from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOpe
 
 from templates.evm_load_template import load_temp_table_template_map, enrich_table_template_map, drop_table_sql
 from variables import SparkConf
-from resource_apply import SparkResource
+from chains.resource_apply import SparkResource
 
 import copy
 
