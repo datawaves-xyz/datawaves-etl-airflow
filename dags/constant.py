@@ -5,7 +5,7 @@ from typing import List, Dict, Optional
 def get_default_dag_args(notification_emails: Optional[List[str]]) -> Dict[str, any]:
     args = {
         "depends_on_past": False,
-        "start_date": datetime.strptime('2022-06-23', '%Y-%m-%d'),
+        "start_date": datetime.strptime('2022-07-17', '%Y-%m-%d'),
         "email_on_failure": True,
         "email_on_retry": False,
         "retries": 3,
