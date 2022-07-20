@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Any, Dict, Union
+from typing import List, Any, Dict, Union, Optional
 
 from mashumaro import DataClassDictMixin
 
@@ -29,7 +29,7 @@ class DatabricksClientConfig(ClientConfig):
     s3_secret_key: str
     s3_region: str
     s3_bucket: str
-    s3_bucket_path_prefix: str
+    s3_bucket_path_prefix: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -84,7 +84,8 @@ class TransferClient(DataClassDictMixin):
 
     @property
     def application_args(self) -> List[any]:
-        return ClientConfig.application_args(self.config.to_dict())
+        config_dict = {k: v for k, v in self.config.to_dict().items() if v is not None}
+        return ClientConfig.application_args(config_dict)
 
 
 @dataclass(frozen=True)
