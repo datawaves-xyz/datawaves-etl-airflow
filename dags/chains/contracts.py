@@ -22,6 +22,7 @@ class EvmAbiEventElement(DataClassDictMixin):
     indexed: bool
     name: str
     type: str
+    components: Optional[List['EvmAbiEventElement']] = None
 
 
 @dataclass(frozen=True)
