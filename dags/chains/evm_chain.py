@@ -454,7 +454,7 @@ def build_evm_parsers(chain: str) -> List[Parser]:
     parsers: List[Parser] = []
     for folder in dataset_folders(chain):
         json_files = get_list_of_files(folder)
-        contracts = [EvmContract.from_dict(read_json_file(json_file)) for json_file in json_files]
+        contracts = [EvmContract.new_instance(read_json_file(json_file)) for json_file in json_files]
         parsers.append(EvmParser(chain, contracts))
 
     return parsers

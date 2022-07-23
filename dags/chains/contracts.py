@@ -19,9 +19,10 @@ class Contract(DataClassDictMixin):
 
 @dataclass(frozen=True)
 class EvmAbiEventElement(DataClassDictMixin):
-    indexed: bool
     name: str
     type: str
+    indexed: bool = False
+    internalType: Optional[str] = None
     components: Optional[List['EvmAbiEventElement']] = None
 
 
@@ -29,6 +30,7 @@ class EvmAbiEventElement(DataClassDictMixin):
 class EvmAbiFunctionElement(DataClassDictMixin):
     name: str
     type: str
+    internalType: Optional[str] = None
     components: Optional[List['EvmAbiFunctionElement']] = None
 
 
@@ -53,3 +55,20 @@ EvmAbiElement = Union[EvmAbiEvent, EvmAbiFunction]
 @dataclass(frozen=True)
 class EvmContract(Contract):
     abi: List[EvmAbiElement] = field(default_factory=list)
+
+    @staticmethod
+    def new_instance(obj: dict) -> 'EvmContract':
+        abi: List[EvmAbiElement] = []
+
+        for element in obj.get('abi', []):
+            if element.get('type') == 'function':
+                abi.append(EvmAbiFunction.from_dict(element))
+            elif element.get('type') == 'event':
+                abi.append(EvmAbiEvent.from_dict(element))
+
+        return EvmContract(
+            dataset_name=obj.get('dataset_name'),
+            contract_name=obj.get('contract_name'),
+            contract_address=obj.get('contract_address'),
+            abi=abi
+        )
