@@ -61,7 +61,7 @@ class EvmParser(Parser):
             for element in contract.abi:
                 etype = element.type
 
-                if etype != 'event' and etype != 'function' or len(element.inputs) == 0:
+                if etype != 'event' and etype != 'function':
                     continue
 
                 application_args = [
