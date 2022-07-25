@@ -67,7 +67,7 @@ class Transfer:
 
             sensor >> task
 
-        for abi in self.client.abis:
+        for abi in self.client.all_abis:
             sensor_id = f'wait_for_{abi.upstream_task_name}'
             task_id = f'transfer_{abi.upstream_task_name}'
 
