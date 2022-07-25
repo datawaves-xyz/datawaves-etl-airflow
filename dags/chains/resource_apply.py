@@ -10,6 +10,7 @@ class ABIElement:
     table_name: Optional[str] = None
     dataset_name: Optional[str] = None
     contract_name: Optional[str] = None
+    abi_name: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -40,12 +41,29 @@ transfer_tasks_resource = [
     TasksResource(
         tasks=[
             ABIElement(chain='ethereum', table_name='traces'),
-            ABIElement(chain='ethereum', table_name='logs')
+            ABIElement(chain='ethereum', table_name='logs'),
+            ABIElement(chain='ethereum', table_name='transactions')
         ],
         resource=SparkResource(
             executor_cores=3,
             executor_memory=16,
             executor_instances=4,
+            driver_cores=2,
+            driver_memory=4
+        )
+    ),
+    TasksResource(
+        tasks=[
+            ABIElement(
+                chain='ethereum',
+                dataset_name='common',
+                contract_name='erc20'
+            )
+        ],
+        resource=SparkResource(
+            executor_cores=2,
+            executor_memory=8,
+            executor_instances=3,
             driver_cores=2,
             driver_memory=4
         )
@@ -66,6 +84,7 @@ def get_abi_table_spark_resource(abi: TransferABI) -> Optional[Dict[str, str]]:
         for task in resource.tasks:
             if task.chain == abi.chain and \
                     task.dataset_name == abi.dataset_name and \
-                    task.contract_name == abi.contract_name:
+                    task.contract_name == abi.contract_name and \
+                    task.abi_name == abi.abi_name:
                 return resource.resource.__dict__()
     return None
