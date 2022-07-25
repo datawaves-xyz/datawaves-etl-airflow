@@ -188,7 +188,7 @@
       "type": "event"
     }
   ],
-  "address": "0x699C7F511C9e2182e89f29b3Bfb68bD327919D17",
+  "contract_address": "0x699C7F511C9e2182e89f29b3Bfb68bD327919D17",
   "contract_name": "ShortNameAuctionController",
   "dataset_name": "ens"
 }

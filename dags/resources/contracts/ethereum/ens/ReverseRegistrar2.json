@@ -94,7 +94,7 @@
       "type": "function"
     }
   ],
-  "address": "0x084b1c3c81545d370f3634392de611caabff8148",
+  "contract_address": "0x084b1c3c81545d370f3634392de611caabff8148",
   "contract_name": "ReverseRegistrar2",
   "dataset_name": "ens"
 }
