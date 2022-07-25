@@ -276,7 +276,7 @@
       "type": "event"
     }
   ],
-  "address": "0xf7c83bd0c50e7a72b55a39fe0dabf5e3a330d749",
+  "contract_address": "0xf7c83bd0c50e7a72b55a39fe0dabf5e3a330d749",
   "contract_name": "ShortNameClaims",
   "dataset_name": "ens"
 }

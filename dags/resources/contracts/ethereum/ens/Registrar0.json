@@ -289,7 +289,7 @@
       "type": "event"
     }
   ],
-  "address": "0x6090A6e47849629b7245Dfa1Ca21D94cd15878Ef",
+  "contract_address": "0x6090A6e47849629b7245Dfa1Ca21D94cd15878Ef",
   "contract_name": "Registrar0",
   "dataset_name": "ens"
 }

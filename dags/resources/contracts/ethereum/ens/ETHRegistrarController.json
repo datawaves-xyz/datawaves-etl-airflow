@@ -239,7 +239,7 @@
       "type": "event"
     }
   ],
-  "address": "0xF0AD5cAd05e10572EfcEB849f6Ff0c68f9700455",
+  "contract_address": "0xF0AD5cAd05e10572EfcEB849f6Ff0c68f9700455",
   "contract_name": "ETHRegistrarController",
   "dataset_name": "ens"
 }
