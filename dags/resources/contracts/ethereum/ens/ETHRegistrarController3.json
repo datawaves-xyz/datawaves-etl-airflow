@@ -372,7 +372,7 @@
       "type": "function"
     }
   ],
-  "address": "0x283Af0B28c62C092C9727F1Ee09c02CA627EB7F5",
+  "contract_address": "0x283Af0B28c62C092C9727F1Ee09c02CA627EB7F5",
   "contract_name": "ETHRegistrarController3",
   "dataset_name": "ens"
 }

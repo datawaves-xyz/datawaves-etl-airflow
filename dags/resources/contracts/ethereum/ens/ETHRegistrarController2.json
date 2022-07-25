@@ -372,7 +372,7 @@
       "type": "event"
     }
   ],
-  "address": "0xB22c1C159d12461EA124b0deb4b5b93020E6Ad16",
+  "contract_address": "0xB22c1C159d12461EA124b0deb4b5b93020E6Ad16",
   "contract_name": "ETHRegistrarController2",
   "dataset_name": "ens"
 }
