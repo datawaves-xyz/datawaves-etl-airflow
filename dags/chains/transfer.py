@@ -21,7 +21,7 @@ class Transfer:
             sensor_id = f'wait_for_{raw.upstream_task_name}'
             task_id = f'transfer_{raw.upstream_task_name}'
 
-            spark_config: Dict[str, str] = spark_conf.conf
+            spark_config: Dict[str, str] = spark_conf.conf.copy()
             raw_table_spark_resource_conf = get_raw_table_spark_resource(raw)
             if raw_table_spark_resource_conf is not None:
                 spark_config.update(raw_table_spark_resource_conf)
@@ -71,7 +71,7 @@ class Transfer:
             sensor_id = f'wait_for_{abi.upstream_task_name}'
             task_id = f'transfer_{abi.upstream_task_name}'
 
-            spark_config: Dict[str, str] = spark_conf.conf
+            spark_config: Dict[str, str] = spark_conf.conf.copy()
             abi_table_spark_resource_conf = get_abi_table_spark_resource(abi)
             if abi_table_spark_resource_conf is not None:
                 spark_config.update(abi_table_spark_resource_conf)
