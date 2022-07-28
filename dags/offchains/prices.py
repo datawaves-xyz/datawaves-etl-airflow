@@ -12,6 +12,7 @@ from offchains.tokens import TokenProvider, Token, DuneTokenProvider
 
 iso_format = '%Y-%m-%dT%H:%M:%SZ'
 minutes_format = '%Y-%m-%d %H:%M'
+pdl_minute_format = 'YYYY-MM-DD HH:mm'
 day_format = '%Y-%m-%d'
 
 price_header = ['minute', 'price', 'decimals', 'contract_address', 'symbol', 'dt']
@@ -70,7 +71,7 @@ class CoinpaprikaPriceProvider(PriceProvider):
 
     @staticmethod
     def copy_record_across_interval(record: PriceRecord, interval: int) -> List[PriceRecord]:
-        start = pdl.from_format(record.minute, minutes_format)
+        start = pdl.from_format(record.minute, pdl_minute_format)
         end = start.add(minutes=interval)
         records = []
 
@@ -82,6 +83,7 @@ class CoinpaprikaPriceProvider(PriceProvider):
 
     def get_single_token_daily_price(self, token: Token, start: int, end: int) -> List[PriceRecord]:
         uri = f'{self.host}/v1/tickers/{token.id}/historical'
+
         res = requests.get(
             url=uri,
             params={

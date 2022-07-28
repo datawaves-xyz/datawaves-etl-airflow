@@ -38,6 +38,7 @@ def build_evm_exporters(
     ep = Exporter.export_folder_path
     export_daofork_traces_option = kwargs.get('export_daofork_traces_option')
     export_genesis_traces_option = kwargs.get('export_genesis_traces_option')
+    coinpaprika_auth_key = kwargs.get('coinpaprika_auth_key')
 
     def get_block_range(tempdir: str, date: datetime, provider_uri: str) -> Tuple[int, int]:
         logging.info(f'Calling get_block_range_for_date({provider_uri}, {date}, ...)')
@@ -174,11 +175,11 @@ def build_evm_exporters(
     def export_prices_command(logical_date: datetime, **kwargs):
         with TemporaryDirectory() as tempdir:
             start_ts = int(logical_date.start_of('day').timestamp())
-            end_ts = int(logical_date.start_of('day').timestamp())
+            end_ts = int(logical_date.end_of('day').timestamp())
 
             logging.info('Calling export_prices({}, {})'.format(start_ts, end_ts))
 
-            prices_provider = CoinpaprikaPriceProvider(auth_key=kwargs.get('coinpaprika_auth_key'))
+            prices_provider = CoinpaprikaPriceProvider(auth_key=coinpaprika_auth_key)
             prices_provider.create_temp_csv(
                 output_path=os.path.join(tempdir, "prices.csv"),
                 start=start_ts,

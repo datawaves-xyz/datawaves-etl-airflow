@@ -1,21 +1,20 @@
 import base64
 import logging
 from datetime import datetime
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Dict
 
 import requests
 import yaml
-from mashumaro import DataClassDictMixin
 
 
-class Token(DataClassDictMixin):
+class Token:
     def __init__(
             self,
             name: str,
             id: str,
             symbol: str,
-            decimals: int,
             address: Union[int, str],
+            decimals: int,
             end: Optional[datetime] = None
     ) -> None:
         self.name = name
@@ -31,6 +30,11 @@ class Token(DataClassDictMixin):
                 self.address = hex(address)
             else:
                 raise ValueError('The type of address must be str or int.')
+
+    # TODO: why DataClassDictMixin.from_dict will throw exception?
+    @classmethod
+    def from_dict(cls, dict: Dict[str, any]) -> 'Token':
+        return cls(**{k: v for k, v in dict.items() if k in ['name', 'id', 'decimals', 'symbol', 'address', 'end']})
 
 
 class TokenProvider:
@@ -48,7 +52,7 @@ class DuneTokenProvider(TokenProvider):
         for item in yaml.safe_load(yaml_content):
             try:
                 tokens.append(Token.from_dict(item))
-            except Exception:
+            except Exception as ex:
                 logging.warning(f'The item dose not contain ever attribute: {item}')
 
         return tokens

@@ -31,6 +31,5 @@ polygon_vars = read_evm_vars(
 )
 
 polygon = build_evm_chain(chain='polygon', **polygon_vars)
-
 for dag in polygon.build_all_dags(**polygon_vars):
     globals()[dag.dag_id] = dag
