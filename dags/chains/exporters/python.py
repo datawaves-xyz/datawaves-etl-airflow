@@ -7,7 +7,10 @@ from ethereumetl.cli import (
     extract_contracts,
     extract_tokens,
     extract_token_transfers,
-    export_traces,
+    export_traces
+)
+
+from polygonetl.cli import (
     export_geth_traces,
     extract_geth_traces
 )
