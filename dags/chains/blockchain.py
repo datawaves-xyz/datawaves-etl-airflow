@@ -42,19 +42,17 @@ class Blockchain:
     def build_all_dags(
             self,
             output_bucket: str,
-            provider_uris: List[str],
             load_spark_conf: SparkConf,
             parse_spark_conf: SparkConf,
-            parse_s3_conf: S3Conf,
-            **kwargs
+            parse_s3_conf: S3Conf
     ) -> List[DAG]:
         return [
-            self.build_export_dag(provider_uris),
+            self.build_export_dag(),
             self.build_load_dag(output_bucket, load_spark_conf),
             *self.build_parse_dags(parse_spark_conf, parse_s3_conf),
         ]
 
-    def build_export_dag(self, provider_uris: List[str]) -> DAG:
+    def build_export_dag(self) -> DAG:
         export_dag = DAG(
             dag_id=self.export_dag_name,
             schedule_interval=self.export_schedule_interval,
@@ -64,7 +62,7 @@ class Blockchain:
         exporter_map: Dict[str, Exporter] = {}
 
         for exporter in self.exporters:
-            exporter.gen_export_task(export_dag, provider_uris)
+            exporter.gen_export_task(export_dag)
             exporter_map[exporter.task_id] = exporter
 
         for export in self.exporters:
