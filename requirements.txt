@@ -1,4 +1,5 @@
 apache-airflow[amazon]==2.3.2
 apache-airflow-providers-apache-spark==3.0.0
-git+https://github.com/datawaves-xyz/ethereum-etl@v2.0.2-dw-2#egg=ethereum-etl
 mashumaro==3.0.3
+ethereum-etl==2.0.2
+polygon-etl==0.1.9
