@@ -1,5 +1,6 @@
 import copy
 import csv
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List
@@ -100,6 +101,9 @@ class CoinpaprikaPriceProvider(PriceProvider):
         )
 
         if not str(res.status_code).startswith('2'):
+            if 'id not found' in res.text:
+                logging.warning(token.id + "don't find in the coinpaprika!")
+                return []
             raise Exception(f'Coinpaprika API failed: {res.text}, {res.url}')
 
         records = []
