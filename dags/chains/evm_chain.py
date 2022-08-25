@@ -32,11 +32,12 @@ def build_evm_exporters(
         BlocksAndTransactionsPythonExporter(
             task_id='export_blocks_and_transactions',
             toggle=kwargs.get('export_blocks_and_transactions_toggle'),
+            dependencies=[],
             provider_uris=kwargs.get('provider_uris'),
             export_batch_size=export_batch_size,
             export_max_workers=export_max_workers,
             chain=chain,
-            output_bucket=output_bucket
+            output_bucket=output_bucket,
         ),
         ReceiptsAndLogsPythonExporter(
             task_id='export_receipts_and_logs',
@@ -61,6 +62,7 @@ def build_evm_exporters(
         TracesPythonExporter(
             task_id='export_traces',
             toggle=kwargs.get('export_traces_toggle'),
+            dependencies=[],
             provider_uris=kwargs.get('provider_uris'),
             export_batch_size=export_batch_size,
             export_max_workers=export_max_workers,
@@ -92,6 +94,7 @@ def build_evm_exporters(
         PricesExporter(
             task_id='export_prices',
             toggle=kwargs.get('export_prices_toggle'),
+            dependencies=[],
             chain=chain,
             output_bucket=output_bucket,
             coinpaprika_auth_key=kwargs.get('coinpaprika_auth_key')
@@ -111,6 +114,7 @@ def build_polygon_exporters(
         BlocksAndTransactionsPythonExporter(
             task_id='export_blocks_and_transactions',
             toggle=kwargs.get('export_blocks_and_transactions_toggle'),
+            dependencies=[],
             provider_uris=kwargs.get('provider_uris'),
             export_batch_size=export_batch_size,
             export_max_workers=export_max_workers,
@@ -140,6 +144,7 @@ def build_polygon_exporters(
         GethTracesPythonExporter(
             task_id='export_traces',
             toggle=kwargs.get('export_traces_toggle'),
+            dependencies=[],
             provider_uris=kwargs.get('provider_uris'),
             export_batch_size=export_batch_size,
             export_max_workers=export_max_workers,

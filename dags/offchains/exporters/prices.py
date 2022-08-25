@@ -7,7 +7,7 @@ from pendulum import datetime
 from tempfile import TemporaryDirectory
 
 from offchains.prices import CoinpaprikaPriceProvider
-from chains.exporter import Exporter
+from chains.exporter import Exporter, ExporterMixIn
 
 
 import logging
@@ -26,7 +26,8 @@ class PricesMixin:
     coinpaprika_auth_key: str
 
 
-class PricesExporter(Exporter, PricesMixin):
+@dataclass
+class PricesExporter(ExporterMixIn, PricesMixin, Exporter):
 
     def __post_init__(self):
         self.s3 = S3Operator(aws_conn_id='aws_default', bucket=self.output_bucket)

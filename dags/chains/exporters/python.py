@@ -22,7 +22,7 @@ from tempfile import TemporaryDirectory
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
-from chains.exporter import Exporter
+from chains.exporter import Exporter, ExporterMixIn
 from chains.exporters import EvmChainMixin
 from utils.s3_operator import S3Operator
 
@@ -35,7 +35,7 @@ def export_path(chain: str, directory: str, date: datetime) -> str:
 
 
 @dataclass
-class EvmChainPythonExporter(Exporter, EvmChainMixin):
+class EvmChainPythonExporter(EvmChainMixin, ExporterMixIn, Exporter):
 
     def __post_init__(self):
         self.s3 = S3Operator(aws_conn_id='aws_default', bucket=self.output_bucket)
