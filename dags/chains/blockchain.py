@@ -44,7 +44,8 @@ class Blockchain:
             output_bucket: str,
             load_spark_conf: SparkConf,
             parse_spark_conf: SparkConf,
-            parse_s3_conf: S3Conf
+            parse_s3_conf: S3Conf,
+            **kwargs
     ) -> List[DAG]:
         return [
             self.build_export_dag(),
