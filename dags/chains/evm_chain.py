@@ -1,30 +1,23 @@
-import logging
-import os
-from tempfile import TemporaryDirectory
-from typing import List, Tuple, Optional
 
-from ethereumetl.cli import (
-    get_block_range_for_date,
-    export_blocks_and_transactions,
-    extract_field,
-    export_receipts_and_logs,
-    extract_contracts,
-    extract_tokens,
-    extract_token_transfers,
-    export_traces,
-    export_geth_traces,
-    extract_geth_traces
-)
-from pendulum import datetime
+from typing import List, Optional
 
 from chains.blockchain import Blockchain
 from chains.contracts import EvmContract
 from chains.exporter import Exporter
+from chains.exporters.python import (
+    BlocksAndTransactionsPythonExporter,
+    TracesPythonExporter,
+    ExtractContractsPythonExporter,
+    ExtractTokenTransfersPythonExporter,
+    ReceiptsAndLogsPythonExporter,
+    ExtractTokensPythonExporter,
+    GethTracesPythonExporter,
+    ExtractContractsFromGethTracesPythonExporter,
+)
+from offchains.exporters.prices import PricesExporter
 from chains.loader import Loader
 from chains.parser import Parser, EvmParser
-from offchains.prices import CoinpaprikaPriceProvider
 from utils.common import dataset_folders, get_list_of_files, read_json_file
-from utils.s3_operator import S3Operator
 
 
 def build_evm_exporters(
@@ -34,200 +27,74 @@ def build_evm_exporters(
         export_batch_size: int = 10,
         **kwargs
 ) -> List[Exporter]:
-    s3 = S3Operator(aws_conn_id='aws_default', bucket=output_bucket)
-    ep = Exporter.export_folder_path
-    export_daofork_traces_option = kwargs.get('export_daofork_traces_option')
-    export_genesis_traces_option = kwargs.get('export_genesis_traces_option')
-    coinpaprika_auth_key = kwargs.get('coinpaprika_auth_key')
-
-    def get_block_range(tempdir: str, date: datetime, provider_uri: str) -> Tuple[int, int]:
-        logging.info(f'Calling get_block_range_for_date({provider_uri}, {date}, ...)')
-        get_block_range_for_date.callback(
-            provider_uri=provider_uri, date=date, output=os.path.join(tempdir, "blocks_meta.txt")
-        )
-
-        with open(os.path.join(tempdir, "blocks_meta.txt")) as block_range_file:
-            block_range = block_range_file.read()
-            start_block, end_block = block_range.split(",")
-
-        return int(start_block), int(end_block)
-
-    def export_blocks_and_transactions_command(logical_date: datetime, provider_uri: str, **kwargs) -> None:
-        with TemporaryDirectory() as tempdir:
-            start_block, end_block = get_block_range(tempdir, logical_date, provider_uri)
-
-            logging.info('Calling export_blocks_and_transactions({}, {}, {}, {}, {}, ...)'.format(
-                start_block, end_block, export_batch_size, provider_uri, export_max_workers))
-
-            export_blocks_and_transactions.callback(
-                start_block=start_block,
-                end_block=end_block,
-                batch_size=export_batch_size,
-                provider_uri=provider_uri,
-                max_workers=export_max_workers,
-                blocks_output=os.path.join(tempdir, "blocks.json"),
-                transactions_output=os.path.join(tempdir, "transactions.json"),
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "blocks_meta.txt"), ep(chain, "blocks_meta", logical_date))
-            s3.copy_to_export_path(os.path.join(tempdir, "blocks.json"), ep(chain, "blocks", logical_date))
-            s3.copy_to_export_path(os.path.join(tempdir, "transactions.json"), ep(chain, "transactions", logical_date))
-
-    def export_receipts_and_logs_command(logical_date: datetime, provider_uri: str, **kwargs) -> None:
-        with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep(chain, "transactions", logical_date),
-                                     os.path.join(tempdir, "transactions.json"))
-
-            logging.info('Calling extract_csv_column(...)')
-            extract_field.callback(
-                input=os.path.join(tempdir, "transactions.json"),
-                output=os.path.join(tempdir, "transaction_hashes.txt"),
-                field="hash",
-            )
-
-            logging.info('Calling export_receipts_and_logs({}, ..., {}, {}, ...)'.format(
-                export_batch_size, provider_uri, export_max_workers))
-
-            export_receipts_and_logs.callback(
-                batch_size=export_batch_size,
-                transaction_hashes=os.path.join(tempdir, "transaction_hashes.txt"),
-                provider_uri=provider_uri,
-                max_workers=export_max_workers,
-                receipts_output=os.path.join(tempdir, "receipts.json"),
-                logs_output=os.path.join(tempdir, "logs.json"),
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "receipts.json"), ep(chain, "receipts", logical_date))
-            s3.copy_to_export_path(os.path.join(tempdir, "logs.json"), ep(chain, "logs", logical_date))
-
-    def extract_contracts_command(logical_date: datetime, **kwargs) -> None:
-        with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep(chain, "traces", logical_date), os.path.join(tempdir, "traces.json"))
-
-            logging.info('Calling extract_contracts(..., {}, {})'.format(
-                export_batch_size, export_max_workers
-            ))
-
-            extract_contracts.callback(
-                traces=os.path.join(tempdir, "traces.json"),
-                output=os.path.join(tempdir, "contracts.json"),
-                batch_size=export_batch_size,
-                max_workers=export_max_workers,
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "contracts.json"), ep(chain, "contracts", logical_date))
-
-    def extract_tokens_command(logical_date: datetime, provider_uri: str, **kwargs):
-        with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep(chain, "contracts", logical_date), os.path.join(tempdir, "contracts.json"))
-
-            logging.info('Calling extract_tokens(..., {}, {})'.format(export_max_workers, provider_uri))
-
-            extract_tokens.callback(
-                contracts=os.path.join(tempdir, "contracts.json"),
-                output=os.path.join(tempdir, "tokens.json"),
-                max_workers=export_max_workers,
-                provider_uri=provider_uri,
-                values_as_strings=True,
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "tokens.json"), ep(chain, "tokens", logical_date))
-
-    def extract_token_transfers_command(logical_date: datetime, **kwargs):
-        with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep(chain, "logs", logical_date), os.path.join(tempdir, "logs.json"))
-
-            logging.info('Calling extract_token_transfers(..., {}, ..., {})'.format(
-                export_batch_size, export_max_workers
-            ))
-            extract_token_transfers.callback(
-                logs=os.path.join(tempdir, "logs.json"),
-                batch_size=export_batch_size,
-                output=os.path.join(tempdir, "token_transfers.json"),
-                max_workers=export_max_workers,
-                values_as_strings=True,
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "token_transfers.json"),
-                                   ep(chain, "token_transfers", logical_date))
-
-    def export_traces_command(logical_date: datetime, provider_uri: str, **kwargs):
-        with TemporaryDirectory() as tempdir:
-            start_block, end_block = get_block_range(tempdir, logical_date, provider_uri)
-
-            logging.info('Calling export_traces({}, {}, {}, ..., {}, {}, {}, {})'.format(
-                start_block, end_block, export_batch_size, export_max_workers, provider_uri,
-                export_genesis_traces_option, export_daofork_traces_option
-            ))
-            export_traces.callback(
-                start_block=start_block,
-                end_block=end_block,
-                batch_size=export_batch_size,
-                output=os.path.join(tempdir, "traces.json"),
-                max_workers=export_max_workers,
-                provider_uri=provider_uri,
-                genesis_traces=export_genesis_traces_option,
-                daofork_traces=export_daofork_traces_option,
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "traces.json"), ep(chain, "traces", logical_date))
-
-    def export_prices_command(logical_date: datetime, **kwargs):
-        with TemporaryDirectory() as tempdir:
-            start_ts = int(logical_date.start_of('day').timestamp())
-            end_ts = int(logical_date.end_of('day').timestamp())
-
-            logging.info('Calling export_prices({}, {})'.format(start_ts, end_ts))
-
-            prices_provider = CoinpaprikaPriceProvider(auth_key=coinpaprika_auth_key)
-            prices_provider.create_temp_csv(
-                output_path=os.path.join(tempdir, "prices.csv"),
-                start=start_ts,
-                end=end_ts
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "prices.csv"), ep(chain, "prices", logical_date))
 
     return [
-        Exporter(
+        BlocksAndTransactionsPythonExporter(
             task_id='export_blocks_and_transactions',
             toggle=kwargs.get('export_blocks_and_transactions_toggle'),
-            export_callable=export_blocks_and_transactions_command,
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        ReceiptsAndLogsPythonExporter(
             task_id='export_receipts_and_logs',
             toggle=kwargs.get('export_receipts_and_logs_toggle'),
-            export_callable=export_receipts_and_logs_command,
-            dependencies=['export_blocks_and_transactions']
+            dependencies=['export_blocks_and_transactions'],
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        ExtractTokenTransfersPythonExporter(
             task_id='extract_token_transfers',
             toggle=kwargs.get('extract_token_transfers_toggle'),
-            export_callable=extract_token_transfers_command,
-            dependencies=['export_receipts_and_logs']
+            provider_uris=kwargs.get('provider_uris'),
+            dependencies=['export_receipts_and_logs'],
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        TracesPythonExporter(
             task_id='export_traces',
             toggle=kwargs.get('export_traces_toggle'),
-            export_callable=export_traces_command,
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket,
+            export_daofork_traces_option=kwargs.get('export_daofork_traces_option'),
+            export_genesis_traces_option=kwargs.get('export_genesis_traces_option')
         ),
-        Exporter(
+        ExtractContractsPythonExporter(
             task_id='extract_contracts',
             toggle=kwargs.get('extract_contracts_toggle'),
-            export_callable=extract_contracts_command,
-            dependencies=['export_traces']
+            dependencies=['export_traces'],
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        ExtractTokensPythonExporter(
             task_id='extract_tokens',
             toggle=kwargs.get('extract_tokens_toggle'),
-            export_callable=extract_tokens_command,
-            dependencies=['extract_contracts']
+            dependencies=['extract_contracts'],
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        PricesExporter(
             task_id='export_prices',
             toggle=kwargs.get('export_prices_toggle'),
-            export_callable=export_prices_command,
-            off_chain=True
+            chain=chain,
+            output_bucket=output_bucket,
+            coinpaprika_auth_key=kwargs.get('coinpaprika_auth_key')
         )
     ]
 
@@ -239,184 +106,65 @@ def build_polygon_exporters(
         export_batch_size: int = 10,
         **kwargs
 ) -> List[Exporter]:
-    s3 = S3Operator(aws_conn_id='aws_default', bucket=output_bucket)
-    ep = Exporter.export_folder_path
-
-    def get_block_range(tempdir: str, date: datetime, provider_uri: str) -> Tuple[int, int]:
-        logging.info(f'Calling get_block_range_for_date({provider_uri}, {date}, ...)')
-        get_block_range_for_date.callback(
-            provider_uri=provider_uri, date=date, output=os.path.join(tempdir, "blocks_meta.txt")
-        )
-
-        with open(os.path.join(tempdir, "blocks_meta.txt")) as block_range_file:
-            block_range = block_range_file.read()
-            start_block, end_block = block_range.split(",")
-
-        return int(start_block), int(end_block)
-
-    def export_blocks_and_transactions_command(logical_date: datetime, provider_uri: str, **kwargs) -> None:
-        with TemporaryDirectory() as tempdir:
-            start_block, end_block = get_block_range(tempdir, logical_date, provider_uri)
-
-            logging.info('Calling export_blocks_and_transactions({}, {}, {}, {}, {}, ...)'.format(
-                start_block, end_block, export_batch_size, provider_uri, export_max_workers))
-
-            export_blocks_and_transactions.callback(
-                start_block=start_block,
-                end_block=end_block,
-                batch_size=export_batch_size,
-                provider_uri=provider_uri,
-                max_workers=export_max_workers,
-                blocks_output=os.path.join(tempdir, "blocks.json"),
-                transactions_output=os.path.join(tempdir, "transactions.json"),
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "blocks_meta.txt"), ep(chain, "blocks_meta", logical_date))
-            s3.copy_to_export_path(os.path.join(tempdir, "blocks.json"), ep(chain, "blocks", logical_date))
-            s3.copy_to_export_path(os.path.join(tempdir, "transactions.json"), ep(chain, "transactions", logical_date))
-
-    def export_receipts_and_logs_command(logical_date: datetime, provider_uri: str, **kwargs) -> None:
-        with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep(chain, "transactions", logical_date),
-                                     os.path.join(tempdir, "transactions.json"))
-
-            logging.info('Calling extract_csv_column(...)')
-            extract_field.callback(
-                input=os.path.join(tempdir, "transactions.json"),
-                output=os.path.join(tempdir, "transaction_hashes.txt"),
-                field="hash",
-            )
-
-            logging.info('Calling export_receipts_and_logs({}, ..., {}, {}, ...)'.format(
-                export_batch_size, provider_uri, export_max_workers))
-
-            export_receipts_and_logs.callback(
-                batch_size=export_batch_size,
-                transaction_hashes=os.path.join(tempdir, "transaction_hashes.txt"),
-                provider_uri=provider_uri,
-                max_workers=export_max_workers,
-                receipts_output=os.path.join(tempdir, "receipts.json"),
-                logs_output=os.path.join(tempdir, "logs.json"),
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "receipts.json"), ep(chain, "receipts", logical_date))
-            s3.copy_to_export_path(os.path.join(tempdir, "logs.json"), ep(chain, "logs", logical_date))
-
-    def extract_contracts_command(logical_date: datetime, **kwargs) -> None:
-        with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep(chain, "geth_traces", logical_date), os.path.join(tempdir, "geth_traces.json"))
-
-            logging.info('Calling extract_contracts(..., {}, {})'.format(
-                export_batch_size, export_max_workers
-            ))
-
-            extract_contracts.callback(
-                traces=os.path.join(tempdir, "geth_traces.json"),
-                output=os.path.join(tempdir, "contracts.json"),
-                batch_size=export_batch_size,
-                max_workers=export_max_workers,
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "contracts.json"), ep(chain, "contracts", logical_date))
-
-    def extract_tokens_command(logical_date: datetime, provider_uri: str, **kwargs):
-        with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep(chain, "contracts", logical_date), os.path.join(tempdir, "contracts.json"))
-
-            logging.info('Calling extract_tokens(..., {}, {})'.format(export_max_workers, provider_uri))
-
-            extract_tokens.callback(
-                contracts=os.path.join(tempdir, "contracts.json"),
-                output=os.path.join(tempdir, "tokens.json"),
-                max_workers=export_max_workers,
-                provider_uri=provider_uri,
-                values_as_strings=True,
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "tokens.json"), ep(chain, "tokens", logical_date))
-
-    def extract_token_transfers_command(logical_date: datetime, **kwargs):
-        with TemporaryDirectory() as tempdir:
-            s3.copy_from_export_path(ep(chain, "logs", logical_date), os.path.join(tempdir, "logs.json"))
-
-            logging.info('Calling extract_token_transfers(..., {}, ..., {})'.format(
-                export_batch_size, export_max_workers
-            ))
-            extract_token_transfers.callback(
-                logs=os.path.join(tempdir, "logs.json"),
-                batch_size=export_batch_size,
-                output=os.path.join(tempdir, "token_transfers.json"),
-                max_workers=export_max_workers,
-                values_as_strings=True,
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "token_transfers.json"),
-                                   ep(chain, "token_transfers", logical_date))
-
-    def export_traces_command(logical_date: datetime, provider_uri: str, **kwargs):
-        with TemporaryDirectory() as tempdir:
-            start_block, end_block = get_block_range(tempdir, logical_date, provider_uri)
-
-            logging.info('Calling export_geth_traces({}, {}, {}, ..., {}, {})'.format(
-                start_block, end_block, export_batch_size, export_max_workers, provider_uri
-            ))
-
-            export_geth_traces.callback(
-                start_block=start_block,
-                end_block=end_block,
-                batch_size=export_batch_size,
-                output=os.path.join(tempdir, "geth_traces_temp.json"),
-                max_workers=export_max_workers,
-                provider_uri=provider_uri
-            )
-
-            logging.info('Calling extract_geth_traces({}, ..., {})'.format(
-                export_batch_size, export_max_workers
-            ))
-
-            extract_geth_traces.callback(
-                input=os.path.join(tempdir, "geth_traces_temp.json"),
-                output=os.path.join(tempdir, "geth_traces.json"),
-                max_workers=1,
-                batch_size=1
-            )
-
-            s3.copy_to_export_path(os.path.join(tempdir, "geth_traces.json"), ep(chain, "geth_traces", logical_date))
 
     return [
-        Exporter(
+        BlocksAndTransactionsPythonExporter(
             task_id='export_blocks_and_transactions',
             toggle=kwargs.get('export_blocks_and_transactions_toggle'),
-            export_callable=export_blocks_and_transactions_command,
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        ReceiptsAndLogsPythonExporter(
             task_id='export_receipts_and_logs',
             toggle=kwargs.get('export_receipts_and_logs_toggle'),
-            export_callable=export_receipts_and_logs_command,
-            dependencies=['export_blocks_and_transactions']
+            dependencies=['export_blocks_and_transactions'],
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        ExtractTokenTransfersPythonExporter(
             task_id='extract_token_transfers',
             toggle=kwargs.get('extract_token_transfers_toggle'),
-            export_callable=extract_token_transfers_command,
-            dependencies=['export_receipts_and_logs']
+            provider_uris=kwargs.get('provider_uris'),
+            dependencies=['export_receipts_and_logs'],
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        GethTracesPythonExporter(
             task_id='export_traces',
             toggle=kwargs.get('export_traces_toggle'),
-            export_callable=export_traces_command,
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        ExtractContractsFromGethTracesPythonExporter(
             task_id='extract_contracts',
             toggle=kwargs.get('extract_contracts_toggle'),
-            export_callable=extract_contracts_command,
-            dependencies=['export_traces']
+            dependencies=['export_traces'],
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         ),
-        Exporter(
+        ExtractTokensPythonExporter(
             task_id='extract_tokens',
             toggle=kwargs.get('extract_tokens_toggle'),
-            export_callable=extract_tokens_command,
-            dependencies=['extract_contracts']
+            dependencies=['extract_contracts'],
+            provider_uris=kwargs.get('provider_uris'),
+            export_batch_size=export_batch_size,
+            export_max_workers=export_max_workers,
+            chain=chain,
+            output_bucket=output_bucket
         )
     ]
 
