@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 from abc import ABC, abstractmethod
 
@@ -7,15 +7,12 @@ from airflow.models import BaseOperator
 
 
 @dataclass
-class ExporterMixIn:
-    output_bucket: str
-    task_id: str
-    toggle: bool
-    dependencies: List[str]
-
-
 class Exporter(ABC):
-    operator: Optional[BaseOperator] = None
+    output_bucket: str
+    toggle: bool
+    task_id: str
+    dependencies: List[str]
+    operator: Optional[BaseOperator] = field(default=None, init=False)
 
     @abstractmethod
     def gen_export_task(self, dag: DAG) -> None:
