@@ -66,9 +66,9 @@ class Blockchain:
             exporter.gen_export_task(export_dag)
             exporter_map[exporter.task_id] = exporter
 
-        for export in self.exporters:
-            for dependency in export.dependencies:
-                exporter_map.get(dependency).operator >> exporter_map.get(export.task_id).operator
+        for exporter in self.exporters:
+            for dependency in exporter.dependencies:
+                exporter_map.get(dependency).operator >> exporter_map.get(exporter.task_id).operator
 
         return export_dag
 
