@@ -261,8 +261,7 @@ class GethTracesPythonExporter(EvmChainPythonExporter):
             extract_geth_traces.callback(
                 input=os.path.join(tempdir, "geth_traces_temp.json"),
                 output=os.path.join(tempdir, "geth_traces.json"),
-                max_workers=1,
-                batch_size=1
+                max_workers=self.export_max_workers,
             )
 
             self.s3.copy_to_export_path(os.path.join(tempdir, "geth_traces.json"),
