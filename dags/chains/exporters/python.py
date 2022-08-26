@@ -150,7 +150,7 @@ class ExtractContractsPythonExporter(EvmChainPythonExporter):
     def export_func(self, logical_date: datetime) -> None:
         with TemporaryDirectory() as tempdir:
 
-            self.s3.copy_from_export_path(export_path(self.chain, "trace", logical_date),
+            self.s3.copy_from_export_path(export_path(self.chain, "traces", logical_date),
                                           os.path.join(tempdir, "traces.json"))
 
             logging.info('Calling extract_contracts(..., {}, {})'.format(
@@ -272,7 +272,7 @@ class ExtractContractsFromGethTracesPythonExporter(EvmChainPythonExporter):
     def export_func(self, logical_date: datetime) -> None:
         with TemporaryDirectory() as tempdir:
 
-            self.s3.copy_from_export_path(export_path(self.chain, "geth_trace", logical_date),
+            self.s3.copy_from_export_path(export_path(self.chain, "geth_traces", logical_date),
                                           os.path.join(tempdir, "geth_traces.json"))
 
             logging.info('Calling extract_contracts(..., {}, {})'.format(
