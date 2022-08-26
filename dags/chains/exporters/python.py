@@ -58,6 +58,7 @@ class EvmChainPythonExporter(EvmChainMixin, ExporterMixIn, Exporter):
 
     def get_fallback_callable(self) -> Callable:
         def python_callable_with_fallback(**kwargs):
+            logging.info('python callable with fallback: ' + str(kwargs))
             for index, provider_uri in enumerate(self.provider_uris):
                 self.provider_uri = provider_uri
                 try:
