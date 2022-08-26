@@ -45,7 +45,7 @@ class EvmChainPythonExporter(EvmChainMixin, ExporterMixIn, Exporter):
         if self.toggle:
             self.operator = PythonOperator(
                 task_id=self.task_id,
-                python_callable=self.get_fallback_callable,
+                python_callable=self.get_fallback_callable(),
                 provide_context=True,
                 execution_timeout=timedelta(hours=15),
                 dag=dag
