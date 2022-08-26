@@ -57,12 +57,12 @@ class EvmChainPythonExporter(EvmChainMixin, ExporterMixIn, Exporter):
         raise NotImplementedError()
 
     def get_fallback_callable(self) -> Callable:
-        def python_callable_with_fallback(**kwargs):
+        def python_callable_with_fallback(logical_date, **kwargs):
             logging.info('python callable with fallback: ' + str(kwargs))
             for index, provider_uri in enumerate(self.provider_uris):
                 self.provider_uri = provider_uri
                 try:
-                    self.export_func(**kwargs)
+                    self.export_func(logical_date)
                     break
                 except Exception as e:
                     if index < (len(self.provider_uris) - 1):
