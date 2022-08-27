@@ -32,7 +32,7 @@ ENV SPARK_HOME=/opt/spark
 ENV PATH="/opt/spark/bin:${PATH}"
 
 # Configure Spark
-RUN curl -s "https://dlcdn.apache.org/spark/spark-${APACHE_SPARK_VERSION}/spark-${APACHE_SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz" | \
+RUN curl -s "https://archive.apache.org/dist/spark/spark-${APACHE_SPARK_VERSION}/spark-${APACHE_SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz" | \
   tar xz -C /opt --owner root --group root --no-same-owner && \
   mv "spark-${APACHE_SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}" spark
 
