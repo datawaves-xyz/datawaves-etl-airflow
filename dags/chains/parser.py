@@ -15,6 +15,7 @@ C = TypeVar('C', bound=Contract)
 class Parser:
     chain: str
     contracts: List[C]
+    is_experiment: bool = False
 
     def __init__(self, chain: str, contracts: List[C]) -> None:
         self.chain = chain
@@ -25,7 +26,10 @@ class Parser:
 
     @property
     def dag_id(self) -> str:
-        return f'{self.chain}_parse_{self.contracts[0].dataset_name}_dag'
+        dag_name = f'{self.chain}_parse_{self.contracts[0].dataset_name}_dag'
+        if self.is_experiment:
+            dag_name = f'experiment_{dag_name}'
+        return dag_name
 
 
 class EvmParser(Parser):

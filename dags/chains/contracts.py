@@ -10,10 +10,10 @@ class ContractElement(DataClassDictMixin):
     type: Optional[str] = None
 
 
-@dataclass(frozen=True)
+@dataclass
 class Contract(DataClassDictMixin):
-    dataset_name: str
-    contract_name: str
+    dataset_name: str = ""
+    contract_name: str = ""
     contract_address: Optional[str] = None
 
 
@@ -52,12 +52,12 @@ class EvmAbiFunction(ContractElement):
 EvmAbiElement = Union[EvmAbiEvent, EvmAbiFunction]
 
 
-@dataclass(frozen=True)
+@dataclass
 class EvmContract(Contract):
     abi: List[EvmAbiElement] = field(default_factory=list)
 
     @staticmethod
-    def new_instance(obj: dict) -> 'EvmContract':
+    def from_contract_dict(obj: dict) -> 'EvmContract':
         abi: List[EvmAbiElement] = []
 
         for element in obj.get('abi', []):

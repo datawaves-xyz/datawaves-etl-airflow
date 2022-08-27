@@ -9,7 +9,7 @@ def get_default_dag_args(notification_emails: Optional[List[str]]) -> Dict[str, 
         "email_on_failure": True,
         "email_on_retry": False,
         "retries": 3,
-        "retry_delay": timedelta(minutes=2)
+        "retry_delay": timedelta(minutes=2),
     }
 
     if notification_emails is not None:
