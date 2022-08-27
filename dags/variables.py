@@ -55,6 +55,9 @@ def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
         'parse_schedule_interval': read_var('parse_schedule_interval', prefix, False, **kwargs),
         'parse_spark_conf': read_individual_spark_vars(prefix + 'parser_'),
         'parse_s3_conf': read_global_s3_vars(),
+        # Experiment_Parse
+        'experiment_parse_schedule_interval': read_var('experiment_parse_schedule_interval', prefix, False, **kwargs),
+        'experiment_parse_spark_conf': read_individual_spark_vars(prefix + 'experiment_parser_'),
         # Common
         'notification_emails': parse_list(read_var('notification_emails', prefix, False, **kwargs)),
         **read_global_vars(),
@@ -81,6 +84,9 @@ def read_individual_spark_vars(prefix: str, **kwargs) -> SparkConf:
 
     loader_spark_args = parse_list(read_var('spark_application_args', prefix, False))
     global_spark_vars['application_args'] = loader_spark_args if loader_spark_args is not None else []
+
+    individual_spark_jars = read_var('spark_jars', prefix, False)
+    global_spark_vars['jars'] = individual_spark_jars if individual_spark_jars != '' else global_spark_vars['jars']
 
     return SparkConf.from_dict(global_spark_vars)
 

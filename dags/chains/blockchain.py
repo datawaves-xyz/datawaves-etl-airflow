@@ -48,13 +48,14 @@ class Blockchain:
             load_spark_conf: SparkConf,
             parse_spark_conf: SparkConf,
             parse_s3_conf: S3Conf,
+            experiment_parse_spark_conf: SparkConf,
             **kwargs
     ) -> List[DAG]:
         return [
             self.build_export_dag(),
             self.build_load_dag(output_bucket, load_spark_conf),
             *self.build_parse_dags(self.parsers, parse_spark_conf, parse_s3_conf),
-            *self.build_parse_dags(self.experiment_parsers, parse_spark_conf, parse_s3_conf)
+            *self.build_parse_dags(self.experiment_parsers, experiment_parse_spark_conf, parse_s3_conf)
         ]
 
     def build_export_dag(self) -> DAG:
