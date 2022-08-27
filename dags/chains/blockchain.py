@@ -14,6 +14,7 @@ class Blockchain:
     exporters: List[Exporter]
     loaders: List[Loader]
     parsers: List[Parser]
+    experiment_parsers: List[Parser]
     export_schedule_interval: str
     load_schedule_interval: str
     parse_schedule_interval: str
@@ -25,6 +26,7 @@ class Blockchain:
             exporters: List[Exporter],
             loaders: List[Loader],
             parsers: List[Parser],
+            experiment_parsers: List[Parser],
             export_schedule_interval: str,
             load_schedule_interval: str,
             parse_schedule_interval: str,
@@ -34,6 +36,7 @@ class Blockchain:
         self.exporters = exporters
         self.loaders = loaders
         self.parsers = parsers
+        self.experiment_parsers = experiment_parsers
         self.export_schedule_interval = export_schedule_interval
         self.load_schedule_interval = load_schedule_interval
         self.parse_schedule_interval = parse_schedule_interval
@@ -50,7 +53,8 @@ class Blockchain:
         return [
             self.build_export_dag(),
             self.build_load_dag(output_bucket, load_spark_conf),
-            *self.build_parse_dags(parse_spark_conf, parse_s3_conf),
+            *self.build_parse_dags(self.parsers, parse_spark_conf, parse_s3_conf),
+            *self.build_parse_dags(self.experiment_parsers, parse_spark_conf, parse_s3_conf)
         ]
 
     def build_export_dag(self) -> DAG:
@@ -100,9 +104,9 @@ class Blockchain:
 
         return load_dag
 
-    def build_parse_dags(self, spark_conf: SparkConf, s3_conf: S3Conf) -> List[DAG]:
+    def build_parse_dags(self, parsers: List[Parser], spark_conf: SparkConf, s3_conf: S3Conf) -> List[DAG]:
         parse_dags: List[DAG] = []
-        for parser in self.parsers:
+        for parser in parsers:
             parse_dag = DAG(
                 dag_id=parser.dag_id,
                 schedule_interval=self.parse_schedule_interval,

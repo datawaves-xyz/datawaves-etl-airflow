@@ -1,4 +1,3 @@
-
 from typing import List, Optional
 
 from chains.blockchain import Blockchain
@@ -14,9 +13,11 @@ from chains.exporters.python import (
     GethTracesPythonExporter,
     ExtractContractsFromGethTracesPythonExporter,
 )
-from offchains.exporters.prices import PricesExporter
 from chains.loader import Loader
 from chains.parser import Parser, EvmParser
+from experiments.contract_service import ContractService
+from experiments.experiment_parser import ExperimentEvmParser
+from offchains.exporters.prices import PricesExporter
 from utils.common import dataset_folders, get_list_of_files, read_json_file
 
 
@@ -27,7 +28,6 @@ def build_evm_exporters(
         export_batch_size: int = 10,
         **kwargs
 ) -> List[Exporter]:
-
     return [
         BlocksAndTransactionsPythonExporter(
             task_id='export_blocks_and_transactions',
@@ -109,7 +109,6 @@ def build_polygon_exporters(
         export_batch_size: int = 10,
         **kwargs
 ) -> List[Exporter]:
-
     return [
         BlocksAndTransactionsPythonExporter(
             task_id='export_blocks_and_transactions',
@@ -208,10 +207,22 @@ def build_evm_parsers(chain: str) -> List[Parser]:
     parsers: List[Parser] = []
     for folder in dataset_folders(chain):
         json_files = get_list_of_files(folder)
-        contracts = [EvmContract.new_instance(read_json_file(json_file)) for json_file in json_files]
+        contracts = [EvmContract.from_contract_dict(read_json_file(json_file)) for json_file in json_files]
         parsers.append(EvmParser(chain, contracts))
 
     return parsers
+
+
+def build_evm_experiment_parsers(chain: str) -> List[Parser]:
+    contract_service = ContractService()
+    contracts = [
+        contract
+        for contract in contract_service.get_contracts_by_chain(chain)
+        # TODO: just use seaport to test
+        if contract.project == 'seaport'
+    ]
+
+    return [ExperimentEvmParser(chain, contracts) for contract in contracts]
 
 
 def build_evm_chain(
@@ -234,11 +245,14 @@ def build_evm_chain(
 
     parsers = build_evm_parsers(chain)
 
+    experiment_parsers = build_evm_experiment_parsers(chain)
+
     return Blockchain(
         name=chain,
         exporters=exporters,
         loaders=loaders,
         parsers=parsers,
+        experiment_parsers=experiment_parsers,
         export_schedule_interval=export_schedule_interval,
         load_schedule_interval=load_schedule_interval,
         parse_schedule_interval=parse_schedule_interval,

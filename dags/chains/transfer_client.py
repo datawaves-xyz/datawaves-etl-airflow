@@ -76,7 +76,7 @@ class TransferContract(DataClassDictMixin):
                 continue
 
             json_files = get_list_of_files(folder, filter_path)
-            contracts = [EvmContract.new_instance(read_json_file(json_file)) for json_file in json_files]
+            contracts = [EvmContract.from_contract_dict(read_json_file(json_file)) for json_file in json_files]
             abis.extend([TransferABI(
                 chain=self.chain,
                 dataset_name=contract.dataset_name,
