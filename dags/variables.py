@@ -51,6 +51,9 @@ def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
         # Load
         'load_schedule_interval': read_var('load_schedule_interval', prefix, False, **kwargs),
         'load_spark_conf': read_individual_spark_vars(prefix + 'loader_'),
+        # Verify
+        'verify_schedule_interval': read_var('verify_schedule_interval', prefix, False, **kwargs),
+        'verify_spark_conf': read_individual_spark_vars(prefix + 'verifier_'),
         # Parse
         'parse_schedule_interval': read_var('parse_schedule_interval', prefix, False, **kwargs),
         'parse_spark_conf': read_individual_spark_vars(prefix + 'parser_'),

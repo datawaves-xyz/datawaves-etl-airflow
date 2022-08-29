@@ -10,9 +10,18 @@ def read_json_file(filepath: str) -> Dict[str, Any]:
         return json.loads(content)
 
 
+def read_file(filepath):
+    with open(filepath) as file_handle:
+        content = file_handle.read()
+        return content
+
+
+def dags_folder() -> str:
+    return os.environ.get('DAGS_FOLDER', '/opt/airflow/dags/repo/dags')
+
+
 def dataset_folders(chain: str) -> List[str]:
-    dags_folder = os.environ.get('DAGS_FOLDER', '/opt/airflow/dags/repo/dags')
-    contracts_folder = os.path.join(dags_folder, f'resources/contracts/{chain}/*')
+    contracts_folder = os.path.join(dags_folder(), f'resources/contracts/{chain}/*')
     return glob(contracts_folder)
 
 
