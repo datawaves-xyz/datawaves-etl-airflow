@@ -86,7 +86,12 @@ def read_individual_spark_vars(prefix: str, **kwargs) -> SparkConf:
     global_spark_vars['application_args'] = loader_spark_args if loader_spark_args is not None else []
 
     individual_spark_jars = read_var('spark_jars', prefix, False)
-    global_spark_vars['jars'] = individual_spark_jars if individual_spark_jars != '' else global_spark_vars['jars']
+    if individual_spark_jars != '' and individual_spark_jars is not None:
+        global_spark_vars['jars'] = individual_spark_jars
+
+    individual_spark_application = read_var('spark_application', prefix, False)
+    if individual_spark_application != '' and individual_spark_application is not None:
+        global_spark_vars['application'] = individual_spark_application
 
     return SparkConf.from_dict(global_spark_vars)
 

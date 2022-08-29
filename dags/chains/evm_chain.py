@@ -1,3 +1,4 @@
+from itertools import groupby
 from typing import List, Optional
 
 from chains.blockchain import Blockchain
@@ -215,14 +216,15 @@ def build_evm_parsers(chain: str) -> List[Parser]:
 
 def build_evm_experiment_parsers(chain: str) -> List[Parser]:
     contract_service = ContractService()
-    contracts = [
+    all_contracts = [
         contract
         for contract in contract_service.get_contracts_by_chain(chain)
         # TODO: just use uniswap to test
-        if contract.project == 'uniswap'
+        if contract.project == 'uniswap' or contract.project == 'seaport2'
     ]
 
-    return [ExperimentEvmParser(chain, contracts) for contract in contracts]
+    return [ExperimentEvmParser(chain, list(contracts))
+            for _, contracts in groupby(all_contracts, lambda x: x.project)]
 
 
 def build_evm_chain(
