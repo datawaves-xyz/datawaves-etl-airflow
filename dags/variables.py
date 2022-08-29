@@ -88,6 +88,10 @@ def read_individual_spark_vars(prefix: str, **kwargs) -> SparkConf:
     individual_spark_jars = read_var('spark_jars', prefix, False)
     global_spark_vars['jars'] = individual_spark_jars if individual_spark_jars != '' else global_spark_vars['jars']
 
+    individual_spark_application = read_var('spark_application', prefix, False)
+    global_spark_vars['application'] = individual_spark_application \
+        if individual_spark_application != '' else global_spark_vars['application']
+
     return SparkConf.from_dict(global_spark_vars)
 
 
