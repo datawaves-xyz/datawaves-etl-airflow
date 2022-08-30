@@ -77,44 +77,20 @@ def read_transfer_vars(prefix: str = 'transfer_', **kwargs) -> Dict[str, Any]:
     }
 
 
-def read_individual_spark_vars(prefix: str, **kwargs) -> SparkConf:
-    global_spark_vars = read_global_spark_vars()
-    global_spark_vars['java_class'] = read_var('spark_java_class', prefix, True)
-
-    load_spark_conf = parse_dict(read_var('spark_conf', prefix, False))
-    if load_spark_conf is not None:
-        global_spark_vars['conf'].update(load_spark_conf)
-
-    loader_spark_args = parse_list(read_var('spark_application_args', prefix, False))
-    global_spark_vars['application_args'] = loader_spark_args if loader_spark_args is not None else []
-
-    individual_spark_jars = read_var('spark_jars', prefix, False)
-    if individual_spark_jars != '' and individual_spark_jars is not None:
-        global_spark_vars['jars'] = individual_spark_jars
-
-    individual_spark_application = read_var('spark_application', prefix, False)
-    if individual_spark_application != '' and individual_spark_application is not None:
-        global_spark_vars['application'] = individual_spark_application
-
-    individual_spark_application = read_var('spark_application', prefix, False)
-    global_spark_vars['application'] = individual_spark_application \
-        if individual_spark_application != '' else global_spark_vars['application']
-
-    return SparkConf.from_dict(global_spark_vars)
+def read_individual_spark_vars(prefix: str) -> SparkConf:
+    return SparkConf.from_dict({
+        'java_class': read_var('spark_java_class', prefix, True),
+        'jars': read_var('spark_jars', prefix, False) or read_var('spark_jars', None, True),
+        'application': read_var('spark_application', prefix, False) or read_var('spark_application', None, True),
+        'conf': (parse_dict(read_var('spark_conf', prefix, False)) or {}) | parse_dict(read_var('spark_conf', None, True)),
+        'application_args': parse_list(read_var('spark_application_args', prefix, False)) or []
+    })
 
 
 def read_global_vars(prefix: Optional[str] = None) -> Dict[str, Any]:
     return {
         'output_bucket': read_var('output_bucket', prefix, True),
         'coinpaprika_auth_key': read_var('coinpaprika_auth_key', prefix, True)
-    }
-
-
-def read_global_spark_vars(prefix: Optional[str] = None) -> Dict[str, Any]:
-    return {
-        'jars': read_var('spark_jars', prefix, True),
-        'application': read_var('spark_application', prefix, True),
-        'conf': parse_dict(read_var('spark_conf', prefix, True))
     }
 
 
