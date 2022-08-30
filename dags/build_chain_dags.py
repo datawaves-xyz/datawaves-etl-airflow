@@ -13,6 +13,7 @@ ethereum_vars = read_evm_vars(
     export_batch_size=10,
     export_schedule_interval='30 0 * * *',
     load_schedule_interval='0 1 * * *',
+    verify_schedule_interval='30 1 * * *',
     parse_schedule_interval='30 1 * * *',
     experiment_parse_schedule_interval='30 1 * * *'
 )
@@ -28,6 +29,7 @@ polygon_vars = read_evm_vars(
     export_batch_size=10,
     export_schedule_interval='30 0 * * *',
     load_schedule_interval='0 1 * * *',
+    verify_schedule_interval='30 1 * * *',
     parse_schedule_interval='30 1 * * *'
 )
 
