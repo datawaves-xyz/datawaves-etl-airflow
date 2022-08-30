@@ -73,6 +73,8 @@ class Verifier:
 
         self._add_verify_task('blocks_have_latest', dag, dependencies=[enrich_blocks_sensor])
         self._add_verify_task('transactions_have_latest', dag, dependencies=[enrich_transactions_sensor])
+        self._add_verify_task('traces_have_latest', dag, dependencies=[enrich_traces_sensor])
+        self._add_verify_task('logs_have_latest', dag, dependencies=[enrich_logs_sensor])
 
     def _add_verify_task(self, task, dag: DAG, dependencies=None):
         sql_path = os.path.join(self.dags_folder, 'resources/verify/{task}.sql'.format(task=task))
