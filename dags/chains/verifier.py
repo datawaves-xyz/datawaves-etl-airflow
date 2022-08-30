@@ -8,6 +8,7 @@ from utils.common import read_file, dags_folder
 from variables import SparkConf
 
 import os
+import logging
 
 
 class Verifier:
@@ -76,6 +77,8 @@ class Verifier:
     def _add_verify_task(self, task, dag: DAG, dependencies=None):
         sql_path = os.path.join(self.dags_folder, 'resources/verify/{task}.sql'.format(task=task))
         sql = read_file(sql_path)
+
+        logging.info(sql)
 
         verify_operator = SparkSubmitOperator(
             task_id='verify_{task}'.format(task=task),
