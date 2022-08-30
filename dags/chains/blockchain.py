@@ -116,7 +116,8 @@ class Blockchain:
         verify_dag = DAG(
             dag_id=self.verify_dag_name,
             schedule_interval=self.verify_schedule_interval,
-            default_args=get_default_dag_args(self.notification_emails)
+            default_args=get_default_dag_args(self.notification_emails),
+            catchup=False
         )
 
         verifier = Verifier(self.name, spark_conf)
