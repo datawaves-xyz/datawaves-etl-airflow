@@ -235,6 +235,7 @@ def build_evm_chain(
         export_schedule_interval: str = '30 0 * * *',
         load_schedule_interval: str = '0 1 * * *',
         parse_schedule_interval: str = '30 1 * * *',
+        verify_schedule_interval: str = '30 1 * * *',
         notification_emails: Optional[List[str]] = None,
         **kwargs
 ) -> Blockchain:
@@ -258,5 +259,6 @@ def build_evm_chain(
         export_schedule_interval=export_schedule_interval,
         load_schedule_interval=load_schedule_interval,
         parse_schedule_interval=parse_schedule_interval,
+        verify_schedule_interval=verify_schedule_interval,
         notification_emails=notification_emails
     )

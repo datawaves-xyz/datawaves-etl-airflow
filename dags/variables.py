@@ -51,6 +51,9 @@ def read_evm_vars(prefix: str, **kwargs) -> Dict[str, Any]:
         # Load
         'load_schedule_interval': read_var('load_schedule_interval', prefix, False, **kwargs),
         'load_spark_conf': read_individual_spark_vars(prefix + 'loader_'),
+        # Verify
+        'verify_schedule_interval': read_var('verify_schedule_interval', prefix, False, **kwargs),
+        'verify_spark_conf': read_individual_spark_vars(prefix + 'verifier_'),
         # Parse
         'parse_schedule_interval': read_var('parse_schedule_interval', prefix, False, **kwargs),
         'parse_spark_conf': read_individual_spark_vars(prefix + 'parser_'),
@@ -92,6 +95,10 @@ def read_individual_spark_vars(prefix: str, **kwargs) -> SparkConf:
     individual_spark_application = read_var('spark_application', prefix, False)
     if individual_spark_application != '' and individual_spark_application is not None:
         global_spark_vars['application'] = individual_spark_application
+
+    individual_spark_application = read_var('spark_application', prefix, False)
+    global_spark_vars['application'] = individual_spark_application \
+        if individual_spark_application != '' else global_spark_vars['application']
 
     return SparkConf.from_dict(global_spark_vars)
 
