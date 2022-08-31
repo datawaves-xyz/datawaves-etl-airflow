@@ -24,15 +24,6 @@ temp_table_names = {
     'temp_receipt_table': 'receipts_{{ds_nodash}}'
 }
 
-enrich_operator_spark_conf_map = {
-    'geth_traces': SparkResource(
-        executor_cores=2,
-        executor_memory=10,
-        executor_instances=2,
-        driver_cores=1,
-        driver_memory=2
-    )
-}
 
 class Loader:
     chain: str
@@ -48,27 +39,43 @@ class Loader:
     def __init__(
             self,
             chain: str,
-            resource: str,
+            name: str,
+            resource: str = None,
             file_format: str = 'json',
             enrich_toggle: bool = True,
             enrich_dependencies: List[str] = None,
-            clean_dependencies: List[str] = None
+            clean_dependencies: List[str] = None,
+            enrich_operator_custom_spark_resource: SparkResource = None
     ) -> None:
+        """
+        :param chain:
+        :param name: name is used to construct task/operator name, which can be referenced as downstream dependency
+        handler.
+        :param resource: resource is used to determine business logic of loader and the s3 exporting path.
+        For example, Polygon `traces` uses `geth_traces` as resource.
+        By default, the resource is the same as its name.
+        :param file_format:
+        :param enrich_toggle:
+        :param enrich_dependencies:
+        :param clean_dependencies:
+        :param enrich_operator_custom_spark_resource:
+        """
         self.chain = chain
-        self.resource = resource
+        self.name = name
+        self.resource = resource or name
         self.file_format = file_format
         self.enrich_toggle = enrich_toggle
-        self.enrich_dependencies = [] if enrich_dependencies is None else enrich_dependencies
-        self.clean_dependencies = [] if clean_dependencies is None else clean_dependencies
+        self.enrich_dependencies = enrich_dependencies or []
+        self.clean_dependencies = clean_dependencies or []
+        self.enrich_operator_custom_spark_resource = enrich_operator_custom_spark_resource
 
     def gen_operators(
             self,
             dag: DAG,
-            database: str,
-            temp_database: str,
             output_bucket: str,
             spark_conf: SparkConf
     ) -> None:
+
         wait_sensor = S3KeySensor(
             task_id=f'wait_latest_{self.resource}',
             timeout=60 * 60,
@@ -79,15 +86,15 @@ class Loader:
         )
 
         load_sql = load_temp_table_template_map[self.resource](
-            temp_database,
+            self.temp_database,
             self.temp_table,
             self.file_format,
             self.s3_export_full_path(output_bucket),
         )
 
         load_operator = SparkSubmitOperator(
-            task_id=f'load_{self.resource}',
-            name='load_{resource}_{{{{ds_nodash}}}}'.format(resource=self.resource),
+            task_id=f'load_{self.name}',
+            name='load_{name}_{{{{ds_nodash}}}}'.format(name=self.name),
             java_class=spark_conf.java_class,
             application=spark_conf.application,
             conf=spark_conf.conf,
@@ -101,21 +108,20 @@ class Loader:
 
         if self.enrich_toggle:
             enrich_sql = enrich_table_template_map[self.resource](
-                database,
-                temp_database,
+                self.database,
+                self.temp_database,
                 self.resource,
                 self.temp_table,
                 **temp_table_names
             )
 
             custom_spark_conf = copy.deepcopy(spark_conf.conf)
-            enrich_operator_custom_spark_conf = enrich_operator_spark_conf_map.get(self.resource)
-            if enrich_operator_custom_spark_conf is not None:
-                custom_spark_conf.update(enrich_operator_custom_spark_conf.__dict__())
+            if self.enrich_operator_custom_spark_resource is not None:
+                custom_spark_conf.update(self.enrich_operator_custom_spark_resource.__dict__())
 
             enrich_operator = SparkSubmitOperator(
-                task_id=f'enrich_{self.resource}',
-                name='enrich_{resource}_{{{{ds_nodash}}}}'.format(resource=self.resource),
+                task_id=f'enrich_{self.name}',
+                name='enrich_{name}_{{{{ds_nodash}}}}'.format(name=self.name),
                 java_class=spark_conf.java_class,
                 application=spark_conf.application,
                 conf=custom_spark_conf,
@@ -142,7 +148,7 @@ class Loader:
             application=spark_conf.application,
             conf=spark_conf.conf,
             jars=spark_conf.jars,
-            application_args=['--sql', drop_table_sql(temp_database, self.temp_table)],
+            application_args=['--sql', drop_table_sql(self.temp_database, self.temp_table)],
             dag=dag
         )
 
@@ -157,6 +163,14 @@ class Loader:
         return 'export/{chain}/{task}/block_date={{{{ds}}}}/{task}.{file_format}'.format(
             chain=self.chain, task=self.resource, file_format=self.file_format
         )
+
+    @property
+    def database(self) -> str:
+        return f'{self.chain}'
+
+    @property
+    def temp_database(self) -> str:
+        return f'{self.chain}_raw'
 
     @property
     def temp_table(self) -> str:
