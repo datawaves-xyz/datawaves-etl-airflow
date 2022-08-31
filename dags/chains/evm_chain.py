@@ -193,9 +193,9 @@ def build_evm_loaders(chain: str) -> List[Loader]:
 def build_polygon_loaders(chain: str) -> List[Loader]:
     return [
         Loader(chain=chain, name='blocks',
-               clean_dependencies=['transactions', 'logs', 'token_transfers', 'geth_traces', 'contracts']),
+               clean_dependencies=['transactions', 'logs', 'token_transfers', 'traces', 'contracts']),
         Loader(chain=chain, name='transactions', enrich_dependencies=['blocks', 'receipts'],
-               clean_dependencies=['geth_traces']),
+               clean_dependencies=['traces']),
         Loader(chain=chain, name='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
         Loader(chain=chain, name='logs', enrich_dependencies=['blocks']),
         Loader(chain=chain, name='token_transfers', enrich_dependencies=['blocks']),

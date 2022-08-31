@@ -100,7 +100,7 @@ class Blockchain:
                 spark_conf=spark_conf
             )
 
-            loader_map[loader.resource] = loader
+            loader_map[loader.name] = loader
 
         for loader in self.loaders:
             for enrich_dependency in loader.enrich_dependencies:
