@@ -96,8 +96,6 @@ class Blockchain:
         for loader in self.loaders:
             loader.gen_operators(
                 dag=load_dag,
-                database=self.database_name,
-                temp_database=self.temp_database_name,
                 output_bucket=output_bucket,
                 spark_conf=spark_conf
             )
@@ -151,10 +149,3 @@ class Blockchain:
     def verify_dag_name(self) -> str:
         return f'{self.name}_verify_dag'
 
-    @property
-    def database_name(self) -> str:
-        return self.name
-
-    @property
-    def temp_database_name(self) -> str:
-        return f'{self.name}_raw'

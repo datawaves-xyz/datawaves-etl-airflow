@@ -16,6 +16,7 @@ from chains.exporters.python import (
 )
 from chains.loader import Loader
 from chains.parser import Parser, EvmParser
+from chains.resource_apply import SparkResource
 from experiments.contract_service import ContractService
 from experiments.experiment_parser import ExperimentEvmParser
 from offchains.exporters.prices import PricesExporter
@@ -176,31 +177,38 @@ def build_polygon_exporters(
 
 def build_evm_loaders(chain: str) -> List[Loader]:
     return [
-        Loader(chain=chain, resource='blocks',
+        Loader(chain=chain, name='blocks',
                clean_dependencies=['transactions', 'logs', 'token_transfers', 'traces', 'contracts']),
-        Loader(chain=chain, resource='transactions', enrich_dependencies=['blocks', 'receipts']),
-        Loader(chain=chain, resource='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
-        Loader(chain=chain, resource='logs', enrich_dependencies=['blocks']),
-        Loader(chain=chain, resource='token_transfers', enrich_dependencies=['blocks']),
-        Loader(chain=chain, resource='traces', enrich_dependencies=['blocks']),
-        Loader(chain=chain, resource='contracts', enrich_dependencies=['blocks']),
-        Loader(chain=chain, resource='tokens'),
-        Loader(chain=chain, resource='prices', file_format='csv')
+        Loader(chain=chain, name='transactions', enrich_dependencies=['blocks', 'receipts']),
+        Loader(chain=chain, name='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
+        Loader(chain=chain, name='logs', enrich_dependencies=['blocks']),
+        Loader(chain=chain, name='token_transfers', enrich_dependencies=['blocks']),
+        Loader(chain=chain, name='traces', enrich_dependencies=['blocks']),
+        Loader(chain=chain, name='contracts', enrich_dependencies=['blocks']),
+        Loader(chain=chain, name='tokens'),
+        Loader(chain=chain, name='prices', file_format='csv')
     ]
 
 
 def build_polygon_loaders(chain: str) -> List[Loader]:
     return [
-        Loader(chain=chain, resource='blocks',
+        Loader(chain=chain, name='blocks',
                clean_dependencies=['transactions', 'logs', 'token_transfers', 'geth_traces', 'contracts']),
-        Loader(chain=chain, resource='transactions', enrich_dependencies=['blocks', 'receipts'],
+        Loader(chain=chain, name='transactions', enrich_dependencies=['blocks', 'receipts'],
                clean_dependencies=['geth_traces']),
-        Loader(chain=chain, resource='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
-        Loader(chain=chain, resource='logs', enrich_dependencies=['blocks']),
-        Loader(chain=chain, resource='token_transfers', enrich_dependencies=['blocks']),
-        Loader(chain=chain, resource='geth_traces', enrich_dependencies=['blocks', 'transactions']),
-        Loader(chain=chain, resource='contracts', enrich_dependencies=['blocks']),
-        Loader(chain=chain, resource='tokens')
+        Loader(chain=chain, name='receipts', clean_dependencies=['transactions'], enrich_toggle=False),
+        Loader(chain=chain, name='logs', enrich_dependencies=['blocks']),
+        Loader(chain=chain, name='token_transfers', enrich_dependencies=['blocks']),
+        Loader(chain=chain, name='traces', resource='geth_traces', enrich_dependencies=['blocks', 'transactions'],
+               enrich_operator_custom_spark_resource=SparkResource(
+                   executor_cores=4,
+                   executor_memory=10,
+                   executor_instances=3,
+                   driver_cores=1,
+                   driver_memory=2
+               )),
+        Loader(chain=chain, name='contracts', enrich_dependencies=['blocks']),
+        Loader(chain=chain, name='tokens')
     ]
 
 
