@@ -2,7 +2,7 @@ select if(
 (
 select count(transaction_hash)
 from {{ params.schema_name }}.traces
-where trace_address is null and transaction_hash is not null
+where trace_address = '[]' and transaction_hash is not null
     and dt = '{{ ds }}'
 ) =
 (
