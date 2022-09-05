@@ -52,3 +52,7 @@ RUN curl -s "https://repo1.maven.org/maven2/com/google/guava/guava/27.0-jre/guav
 RUN curl -s "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.2.2/hadoop-aws-3.2.2.jar" -o "/opt/spark/jars/hadoop-aws-3.2.2.jar"
 RUN curl -s "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client/3.2.2/hadoop-client-3.2.2.jar" -o "/opt/spark/jars/hadoop-client-3.2.2.jar"
 RUN curl -s "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/3.2.2/hadoop-common-3.2.2.jar" -o "/opt/spark/jars/hadoop-common-3.2.2.jar"
+
+USER airflow
+
+RUN pip install apache-airflow-providers-apache-spark==3.0.0
