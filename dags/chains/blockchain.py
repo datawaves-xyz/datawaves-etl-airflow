@@ -148,4 +148,3 @@ class Blockchain:
     @property
     def verify_dag_name(self) -> str:
         return f'{self.name}_verify_dag'
-

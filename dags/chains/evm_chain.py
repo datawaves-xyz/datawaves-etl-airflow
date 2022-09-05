@@ -227,10 +227,8 @@ def build_evm_experiment_parsers(chain: str) -> List[Parser]:
     all_contracts = [
         contract
         for contract in contract_service.get_contracts_by_chain(chain)
-        # TODO: just use uniswap to test
-        if contract.project == 'uniswap' or contract.project == 'seaport2'
+        if contract.type != 'raw'
     ]
-
     return [ExperimentEvmParser(chain, list(contracts))
             for _, contracts in groupby(all_contracts, lambda x: x.project)]
 
