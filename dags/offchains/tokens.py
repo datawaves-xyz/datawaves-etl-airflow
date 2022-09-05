@@ -44,7 +44,8 @@ class TokenProvider:
 
 class DuneTokenProvider(TokenProvider):
     def get_tokens(self) -> List[Token]:
-        yaml_file_path = "https://api.github.com/repos/duneanalytics/abstractions/contents/prices/ethereum/coinpaprika.yaml"
+        # TODO: it is deprecated now
+        yaml_file_path = "https://api.github.com/repos/duneanalytics/spellbook/contents/deprecated-dune-v1-abstractions/prices/ethereum/coinpaprika.yaml"
         res = requests.get(yaml_file_path)
         yaml_content = base64.b64decode(res.json()['content']).decode('utf-8')
 
