@@ -82,7 +82,8 @@ def read_individual_spark_vars(prefix: str) -> SparkConf:
         'java_class': read_var('spark_java_class', prefix, True),
         'jars': read_var('spark_jars', prefix, False) or read_var('spark_jars', None, True),
         'application': read_var('spark_application', prefix, False) or read_var('spark_application', None, True),
-        'conf': (parse_dict(read_var('spark_conf', prefix, False)) or {}) | parse_dict(read_var('spark_conf', None, True)),
+        'conf': parse_dict(read_var('spark_conf', None, True)) |
+                (parse_dict(read_var('spark_conf', prefix, False)) or {}),
         'application_args': parse_list(read_var('spark_application_args', prefix, False)) or []
     })
 
