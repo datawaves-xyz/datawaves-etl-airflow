@@ -68,7 +68,8 @@ class Blockchain:
             dag_id=self.export_dag_name,
             schedule_interval=self.export_schedule_interval,
             default_args=get_default_dag_args(self.notification_emails),
-            catchup=False
+            catchup=False,
+            tags=['export', self.name]
         )
 
         exporter_map: Dict[str, Exporter] = {}
@@ -88,7 +89,8 @@ class Blockchain:
             dag_id=self.load_dag_name,
             schedule_interval=self.load_schedule_interval,
             default_args=get_default_dag_args(self.notification_emails),
-            catchup=False
+            catchup=False,
+            tags=['load', self.name]
         )
 
         loader_map: Dict[str, Loader] = {}
@@ -115,7 +117,8 @@ class Blockchain:
             dag_id=self.verify_dag_name,
             schedule_interval=self.verify_schedule_interval,
             default_args=get_default_dag_args(self.notification_emails, retries=0),
-            catchup=False
+            catchup=False,
+            tags=['verify', self.name]
         )
 
         verifier = Verifier(self.name, spark_conf)
@@ -129,7 +132,8 @@ class Blockchain:
                 dag_id=parser.dag_id,
                 schedule_interval=self.parse_schedule_interval,
                 default_args=get_default_dag_args(self.notification_emails),
-                catchup=False
+                catchup=False,
+                tags=['parse', self.name]
             )
 
             parser.gen_operators(dag=parse_dag, spark_conf=spark_conf, s3_conf=s3_conf)
