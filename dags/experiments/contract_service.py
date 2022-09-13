@@ -38,4 +38,4 @@ class ContractService:
         if not str(res.status_code).startswith('2'):
             raise Exception(f'Get contracts by chain failed: {chain}')
 
-        return [ContractDTO.from_dict(item) for item in res.json()]
+        return [ContractDTO.from_dict(item) for item in res.json()['data']]
